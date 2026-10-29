@@ -27,7 +27,7 @@ jobs:
           if [ '${{ matrix.homeassistant }}' = latest ]; then
             python -m pip install homeassistant pyserial-asyncio-fast==0.16 ruff
           else
-            python -m pip install homeassistant==${{ matrix.homeassistant }} pyserial-asyncio-fast==0.16 ruff
+            python -m pip install homeassistant==${{ matrix.homeassistant }} 'pycares<5' pyserial-asyncio-fast==0.16 ruff
           fi
       - run: ruff check .
       - run: python -m unittest discover -s tests -t . -v

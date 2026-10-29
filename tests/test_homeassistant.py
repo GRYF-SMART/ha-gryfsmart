@@ -14,6 +14,7 @@ from .support import Emulator
 )
 class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        from homeassistant import loader
         from homeassistant.config_entries import ConfigEntries
         from homeassistant.core import HomeAssistant
         from homeassistant.setup import async_setup_component
@@ -25,6 +26,8 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
             ignore=shutil.ignore_patterns("__pycache__"),
         )
         self.hass = HomeAssistant(self.folder.name)
+        self.hass.config.set_time_zone("UTC")
+        loader.async_setup(self.hass)
         self.hass.config_entries = ConfigEntries(self.hass, {})
         await self.hass.config_entries.async_initialize()
         await async_setup_component(self.hass, "homeassistant", {})
