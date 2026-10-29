@@ -154,7 +154,7 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
             flow["flow_id"], {"device": "/dev/gryfsmart-does-not-exist"}
         )
         self.assertEqual(flow["errors"]["base"], "cannot_connect")
-        await self.hass.config_entries.flow.async_abort(flow["flow_id"])
+        self.hass.config_entries.flow.async_abort(flow["flow_id"])
 
 
 if __name__ == "__main__":

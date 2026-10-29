@@ -1,0 +1,21 @@
+{
+  "title": "GRYFSMART",
+  "config": {
+    "step": {
+      "user": {"title": "Connect GRYFSMART", "description": "Choose Ethernet or RS-232. Modules and entities are discovered automatically without changing module addresses.", "menu_options": {"ethernet": "Ethernet — ETH0606T", "serial": "RS-232 / USB serial adapter"}},
+      "ethernet": {"title": "Ethernet — ETH0606T", "description": "Enter the ETH address. Application TCP port: 5000. Disconnect other clients using this port.", "data": {"host": "ETH IP address or hostname", "port": "TCP port"}},
+      "serial": {"title": "RS-232 — Home Assistant serial port", "description": "Select the adapter attached to HA, or enter /dev/serial/by-id/… Settings: 115200, 8N1. Pass the adapter to the VM/container if applicable. Connect from logical port 0.", "data": {"device": "RS-232 adapter port"}}
+    },
+    "error": {"cannot_connect": "Cannot connect. Check the address, port, wiring and whether another application is using the connection.", "firmware_required": "Update module firmware: ETH ≥25, R0808 ≥25, R0806T ≥27, S0804 ≥27, OLD ≥4."},
+    "abort": {"already_configured": "This GRYFSMART connection is already configured."}
+  },
+  "options": {
+    "step": {
+      "init": {"title": "Change connection", "menu_options": {"ethernet": "Ethernet", "serial": "RS-232"}},
+      "ethernet": {"title": "Ethernet", "data": {"host": "ETH IP address or hostname", "port": "TCP port"}},
+      "serial": {"title": "RS-232", "data": {"device": "RS-232 adapter port"}}
+    },
+    "error": {"cannot_connect": "Cannot connect. Check the connection and port access.", "firmware_required": "Update the module firmware.", "wrong_gateway": "This is a different ETH gateway. Add it as a separate connection."}
+  },
+  "entity": {"event": {"input_event": {"name": "Input events", "state_attributes": {"event_type": {"state": {"closed": "Contact closed", "opened": "Contact opened", "short_press": "Short press", "long_press": "Long press"}}}}}}
+}
