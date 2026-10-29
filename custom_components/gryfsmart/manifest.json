@@ -1,0 +1,12 @@
+{
+  "domain": "gryfsmart",
+  "name": "GRYFSMART",
+  "codeowners": ["@GRYF-SMART"],
+  "config_flow": true,
+  "documentation": "https://github.com/GRYF-SMART/ha-gryfsmart",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/GRYF-SMART/ha-gryfsmart/issues",
+  "requirements": ["pyserial-asyncio-fast==0.16"],
+  "version": "0.1.0"
+}

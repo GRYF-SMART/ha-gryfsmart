@@ -1,0 +1,40 @@
+{
+  "title": "GRYFSMART",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Połączenie z GRYFSMART",
+        "description": "Wybierz sposób połączenia. Moduły i ich encje zostaną dodane automatycznie. Skan nie zmienia adresów modułów.",
+        "menu_options": {"ethernet": "Ethernet — przez ETH0606T", "serial": "RS-232 / adapter USB–RS232"}
+      },
+      "ethernet": {
+        "title": "Ethernet — moduł ETH0606T",
+        "description": "Podaj IP ETH. Port aplikacji: 5000. Rozłącz GRYFEXPERT i inne programy używające tego samego połączenia TCP.",
+        "data": {"host": "Adres IP lub nazwa hosta ETH", "port": "Port TCP"}
+      },
+      "serial": {
+        "title": "RS-232 — port w Home Assistant",
+        "description": "Adapter podłącz do maszyny z HA. Wybierz port lub wpisz /dev/serial/by-id/… Parametry: 115200, 8N1. W VM/kontenerze udostępnij adapter. Podłącz linię od portu logicznego 0.",
+        "data": {"device": "Port adaptera RS-232"}
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie udało się połączyć. Sprawdź adres/port, adapter, okablowanie i czy połączenia nie zajmuje inny program.",
+      "firmware_required": "Zaktualizuj firmware modułu: ETH ≥25, R0808 ≥25, R0806T ≥27, S0804 ≥27, OLD ≥4."
+    },
+    "abort": {"already_configured": "To połączenie GRYFSMART zostało już dodane."}
+  },
+  "options": {
+    "step": {
+      "init": {"title": "Zmień połączenie", "menu_options": {"ethernet": "Ethernet", "serial": "RS-232"}},
+      "ethernet": {"title": "Ethernet", "data": {"host": "Adres IP lub nazwa hosta ETH", "port": "Port TCP"}},
+      "serial": {"title": "RS-232", "data": {"device": "Port adaptera RS-232"}}
+    },
+    "error": {
+      "cannot_connect": "Nie udało się połączyć. Sprawdź połączenie i dostęp do portu.",
+      "firmware_required": "Zaktualizuj firmware modułów do aktualnego kompletu.",
+      "wrong_gateway": "To inna bramka ETH. Dodaj ją jako osobne połączenie."
+    }
+  },
+  "entity": {"event": {"input_event": {"name": "Zdarzenia wejścia", "state_attributes": {"event_type": {"state": {"closed": "Moment zwarcia", "opened": "Moment rozwarcia", "short_press": "Krótkie naciśnięcie", "long_press": "Długie naciśnięcie"}}}}}}
+}
