@@ -14,10 +14,8 @@ from .support import Emulator
 )
 class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        from homeassistant import loader
-        from homeassistant.config_entries import ConfigEntries
+        from homeassistant import bootstrap, loader
         from homeassistant.core import HomeAssistant
-        from homeassistant.setup import async_setup_component
 
         self.folder = tempfile.TemporaryDirectory()
         shutil.copytree(
@@ -26,11 +24,22 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
             ignore=shutil.ignore_patterns("__pycache__"),
         )
         self.hass = HomeAssistant(self.folder.name)
-        self.hass.config.set_time_zone("UTC")
+        self.hass.config.skip_pip = True
         loader.async_setup(self.hass)
-        self.hass.config_entries = ConfigEntries(self.hass, {})
-        await self.hass.config_entries.async_initialize()
-        await async_setup_component(self.hass, "homeassistant", {})
+        result = await bootstrap.async_from_config_dict(
+            {
+                "homeassistant": {
+                    "latitude": 52,
+                    "longitude": 21,
+                    "elevation": 100,
+                    "unit_system": "metric",
+                    "time_zone": "UTC",
+                }
+            },
+            self.hass,
+        )
+        self.assertIsNotNone(result)
+        await self.hass.async_start()
         self.emulator = Emulator()
         self.settings = await self.emulator.start()
 
