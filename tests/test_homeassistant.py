@@ -129,6 +129,9 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         await handler(self.hass, non_admin, dict(request, action="modules"))
         self.assertEqual(non_admin.error[0], "unauthorized")
 
+        # The panel explicitly saved above; subsequent controls must not autosave.
+        self.emulator.commands.clear()
+
         def entity_id(suffix):
             return next(
                 entity.entity_id for entity in entities if entity.unique_id.endswith(suffix)
