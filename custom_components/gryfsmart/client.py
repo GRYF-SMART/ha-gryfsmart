@@ -30,6 +30,8 @@ class GryfClient:
         self.sequence = 0
         self.details = set()
         self.gateway_mac = None
+        self.pwm_tasks = {}
+        self.closing = False
 
     @property
     def connected(self):
@@ -42,6 +44,7 @@ class GryfClient:
 
     async def connect(self):
         await self.close()
+        self.closing = False
         try:
             async with asyncio.timeout(5):
                 if self.settings["connection"] == "ethernet":
@@ -88,6 +91,13 @@ class GryfClient:
             raise ConnectionLost(str(error)) from error
 
     async def close(self):
+        self.closing = True
+        tasks = tuple(self.pwm_tasks.values())
+        self.pwm_tasks.clear()
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
         if self.reader_task:
             self.reader_task.cancel()
             with suppress(asyncio.CancelledError):
@@ -124,6 +134,8 @@ class GryfClient:
                         for channel, event in events:
                             self.on_event(address, channel, event)
                         self.on_change()
+                        if line.startswith("PWM=") and self.store.states[address].pwm[3]:
+                            self._follow_pwm(address)
                     if self.pending:
                         future, predicate, address = self.pending
                         if not future.done():
@@ -306,6 +318,31 @@ class GryfClient:
             ),
         )
         return self.store.states[address].configs[channel]
+
+    def _follow_pwm(self, address):
+        if self.closing:
+            return
+        task = self.pwm_tasks.get(address)
+        if task is None or task.done():
+            self.pwm_tasks[address] = asyncio.create_task(
+                self._watch_pwm(address), name=f"gryfsmart-pwm-{address}"
+            )
+
+    async def _watch_pwm(self, address):
+        # Hardware owns the ramp; only read back its real intermediate levels.
+        deadline = asyncio.get_running_loop().time() + 8
+        try:
+            while self.connected and asyncio.get_running_loop().time() < deadline:
+                state = self.store.states[address].pwm
+                if state is None or not state[3]:
+                    break
+                await asyncio.sleep(0.15)
+                await self.read_pwm(address)
+        except (OSError, TimeoutError, ProtocolError) as error:
+            _LOGGER.debug("PWM progress read failed for ID %s: %s", address, error)
+        finally:
+            if self.pwm_tasks.get(address) is asyncio.current_task():
+                self.pwm_tasks.pop(address, None)
 
     async def read_pwm(self, address):
         if not self.modules[address].pwm:

@@ -1,7 +1,7 @@
 """Constants shared by the integration and the wire protocol."""
 
 DOMAIN = "gryfsmart"
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 DEFAULT_PORT = 5000
 BAUDRATE = 115200
 TIMEOUT = 2.0

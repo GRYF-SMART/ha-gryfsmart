@@ -3,6 +3,7 @@
 import asyncio
 import importlib
 import sys
+import time
 import types
 from pathlib import Path
 
@@ -89,13 +90,30 @@ class Emulator:
             return None
         if name == "GetInputs":
             return f"I={address}," + ",".join(map(str, self.inputs[address]))
+        if name == "GetPWM" and getattr(self, "pwm_motion", False):
+            elapsed = time.monotonic() - getattr(self, "pwm_started", 0)
+            target = getattr(self, "pwm_target", 0)
+            start = getattr(self, "pwm_start_level", 0)
+            ratio = min(elapsed / 1.5, 1)
+            self.pwm_level = round(start + (target - start) * ratio)
+            return f"PWM={address},{self.pwm_level},{target},70,{int(ratio < 1)},2000"
         if name == "GetPWM":
             return f"PWM={address},{getattr(self, 'pwm_level', 0)},{getattr(self, 'pwm_level', 0)},70,0,2000"
         if name == "PWM":
             values = list(map(int, fields))
-            if address != 3 or len(values) != 5 or values[3] != 15 or sum(values[:-1]) != values[-1]:
+            if (
+                address != 3
+                or len(values) != 5
+                or values[3] != 15
+                or sum(values[:-1]) != values[-1]
+            ):
                 return f"PWMERROR={address}"
-            self.pwm_level = values[2]
+            if getattr(self, "pwm_motion", False):
+                self.pwm_start_level = getattr(self, "pwm_level", 0)
+                self.pwm_target = values[2]
+                self.pwm_started = time.monotonic()
+            else:
+                self.pwm_level = values[2]
             return f"RuleOK={address}"
         if name == "GetOut":
             return f"o={address}," + ",".join(map(str, self.outputs[address]))

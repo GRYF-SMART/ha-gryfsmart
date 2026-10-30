@@ -92,3 +92,7 @@ Po aktualizacji integracji uruchom HA ponownie. Nowa encja pojawi się po załad
 ## PWM — wersja 0.2.1
 
 Każda zmiana suwakiem wysyła rampę 1,5 s (15 jednostek po 0,1 s), również przejście do 0%. Rampę wykonuje sprzętowy firmware modułu, bez wysyłania serii małych kroków z HA. Nowe ustawienie podczas rampy przechodzi od aktualnego poziomu do nowego celu. Stan encji pozostaje odczytem rzeczywistym; zakończenie rampy aktualizuje raport PWM. Nie potrzeba nowego HEX-u.
+
+## PWM — wersja 0.2.2
+
+Podczas rampy integracja odczytuje rzeczywisty poziom przez `AT+GetPWM` co około 150 ms i publikuje kolejne wartości encji. Suwak oraz procent mogą pokazywać postęp w trakcie 1,5 s zamiast przeskakiwać dopiero po zakończeniu. Nie jest to animacja wyliczona w HA: stan pochodzi z modułu. Odczyty kończą się po rampie, rozłączeniu albo po limicie 8 s; jedna rampa wysyła tylko jedno polecenie sterujące. Ruch suwakiem w interfejsie może zależeć od użytej karty i opóźnienia sieci.

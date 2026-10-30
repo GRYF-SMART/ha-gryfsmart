@@ -150,6 +150,25 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
         await self.client.close()
         self.assertIsNone(self.client.store.states[3].pwm)
 
+    async def test_pwm_progress_during_hardware_ramp(self):
+        await self.client.discover()
+        self.emulator.pwm_motion = True
+        levels = []
+        self.client.on_change = lambda: levels.append(self.client.store.states[3].pwm)
+        await self.client.pwm(3, 100)
+        self.assertLess(self.client.store.states[3].pwm[0], 100)
+        await asyncio.sleep(1.9)
+        self.assertEqual(self.client.store.states[3].pwm[:2], (100, 100))
+        self.assertEqual(self.client.store.states[3].pwm[3], 0)
+        self.assertGreaterEqual(len({s[0] for s in levels if s and 0 < s[0] < 100}), 4)
+        self.assertEqual(self.emulator.commands.count(p.csv("PWM", 3, 4, 100, 15)), 1)
+        await self.client.pwm(3, 0)
+        await asyncio.sleep(0.3)
+        self.assertTrue(self.client.pwm_tasks)
+        await self.client.close()
+        self.assertFalse(self.client.pwm_tasks)
+        self.assertIsNone(self.client.store.states[3].pwm)
+
     async def test_discovery_stops_and_reads_all_models(self):
         start = time.monotonic()
         found = await self.client.discover()
