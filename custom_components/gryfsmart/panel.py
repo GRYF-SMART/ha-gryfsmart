@@ -19,7 +19,14 @@ PATH = "gryfsmart-config"
 
 async def register(hass, entry, hub):
     state = hass.data.setdefault(
-        KEY, {"entries": {}, "snapshots": {}, "registered": False, "visible": False}
+        KEY,
+        {
+            "entries": {},
+            "snapshots": {},
+            "registered": False,
+            "visible": False,
+            "lock": asyncio.Lock(),
+        },
     )
     async with state["lock"]:
         if not state["registered"]:
