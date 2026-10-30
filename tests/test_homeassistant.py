@@ -28,6 +28,7 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         loader.async_setup(self.hass)
         result = await bootstrap.async_from_config_dict(
             {
+                "frontend": {},
                 "homeassistant": {
                     "latitude": 52,
                     "longitude": 21,

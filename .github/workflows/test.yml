@@ -29,5 +29,12 @@ jobs:
           else
             python -m pip install homeassistant==${{ matrix.homeassistant }} 'pycares<5' pyserial-asyncio-fast==0.16 ruff
           fi
+      - name: Install matching HA frontend for panel runtime tests
+        run: |
+          python - <<'PY'
+          import json, pathlib, subprocess, sys, homeassistant
+          manifest = pathlib.Path(homeassistant.__file__).parent / 'components/frontend/manifest.json'
+          subprocess.check_call([sys.executable, '-m', 'pip', 'install', *json.loads(manifest.read_text())['requirements']])
+          PY
       - run: ruff check .
       - run: python -m unittest discover -s tests -t . -v
