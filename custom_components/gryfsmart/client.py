@@ -422,6 +422,58 @@ class GryfClient:
                 ),
             )
 
+    async def read_rule(self, address, number):
+        from .rules import read_rule
+
+        async with self.control_lock:
+            module = self.modules[address]
+            actual = find(
+                await self.request(
+                    f"AT+Find={address}", lambda s: s.startswith(f"AT+Find={address},")
+                )
+            )
+            if actual is None or actual.model != module.model:
+                raise ProtocolError("Tożsamość modułu uległa zmianie")
+            return await read_rule(self, module, number)
+
+    async def write_rule(self, address, number, desired, baseline):
+        from .rules import read_rule, validate, write_plan
+
+        async with self.control_lock:
+            module = self.modules[address]
+            desired = validate(module, number, desired, self.modules)
+            actual = find(
+                await self.request(
+                    f"AT+Find={address}", lambda s: s.startswith(f"AT+Find={address},")
+                )
+            )
+            if actual is None or actual.model != module.model:
+                raise ProtocolError("Tożsamość modułu uległa zmianie")
+            if await read_rule(self, module, number) != baseline:
+                raise ProtocolError(
+                    "Reguła zmieniła się od odczytu. Odczytaj ją ponownie; niczego nie zapisano."
+                )
+            commands = write_plan(module, number, desired)
+            for command in commands[:-1]:
+                await self.request(command, lambda s: s == f"RuleOK={address}", mutation=True)
+            disabled = dict(desired, enabled=0)
+            if await read_rule(self, module, number) != disabled:
+                raise ProtocolError(
+                    "Odczyt kontrolny różni się od planu. Reguła pozostaje wyłączona; EEPROM nie zapisano."
+                )
+            await self.request(commands[-1], lambda s: s == f"RuleOK={address}", mutation=True)
+            if await read_rule(self, module, number) != desired:
+                raise ProtocolError(
+                    "Nie potwierdzono stanu reguły. EEPROM nie zapisano; odczytaj moduł ponownie."
+                )
+            await self.request(
+                csv("SaveConfig", address),
+                lambda s: s == f"SaveOK={address}",
+                timeout=20,
+                mutation=True,
+            )
+            return desired
+
     async def save(self, address):
         if self.modules[address].old:
             raise ProtocolError("This integration does not edit OLD configuration")

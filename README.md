@@ -96,3 +96,18 @@ Każda zmiana suwakiem wysyła rampę 1,5 s (15 jednostek po 0,1 s), również p
 ## PWM — wersja 0.2.2
 
 Podczas rampy integracja odczytuje rzeczywisty poziom przez `AT+GetPWM` co około 150 ms i publikuje kolejne wartości encji. Suwak oraz procent mogą pokazywać postęp w trakcie 1,5 s zamiast przeskakiwać dopiero po zakończeniu. Nie jest to animacja wyliczona w HA: stan pochodzi z modułu. Odczyty kończą się po rampie, rozłączeniu albo po limicie 8 s; jedna rampa wysyła tylko jedno polecenie sterujące. Ruch suwakiem w interfejsie może zależeć od użytej karty i opóźnienia sieci.
+
+## Panel reguł — wersja 0.3.0
+
+Po aktualizacji HACS i pełnym restarcie Home Assistant administrator zobaczy w bocznym menu **GRYFSMART — Konfiguracja**. Jeśli panel nie pojawi się od razu, odśwież aplikację lub stronę HA. Panel działa także na telefonie, bez dopisywania YAML i bez nowego firmware.
+
+1. Wybierz instalację, moduł i regułę 1–16.
+2. Naciśnij **Odczytaj regułę**. Odczyt obejmuje wejścia, akcje, cztery sloty oraz istniejące PWM i wyzwalacze temperatury.
+3. Zmień zdarzenia (krótkie/długie naciśnięcie, zwarcie/rozwarcie) oraz akcje lokalne albo zdalne. Dostępne są przekaźniki, rolety i pozycje, PWM z rampą, impulsy czasowe oraz wyzwalanie temperaturą w obsługiwanych modelach.
+4. Naciśnij **Wyślij i zapisz w module** i potwierdź. Reguła najpierw jest wyłączana, zmieniana i porównywana z odczytem sprzętu. Dopiero potem ustawiany jest docelowy stan włączenia i zapisywane EEPROM. Reguły działają w module także bez HA.
+
+Panel odrzuca edycję starego odczytu (10 minut, zmiana użytkownika/instalacji lub zmiana reguły w sprzęcie). Po błędzie nie ponawia automatycznie poleceń zapisujących. Ponownie odczytaj regułę, zanim ponowisz zapis. Zapis EEPROM utrwala bieżącą konfigurację całego wybranego modułu, w tym inne wcześniejsze niezapisane zmiany. Edytor wysyła wyłącznie wybraną regułę; pozostałe reguły pozostają zachowane. Nie edytuj równolegle tej samej instalacji z GRYFEXPERT.
+
+**OLD** jest widoczny, ale nie jest edytowany w tym panelu, ponieważ jego firmware nie udostępnia odczytu konfiguracji potrzebnego do kontroli zmian. Do OLD użyj GRYFEXPERT. **ETH0606T, R0808, R0806T i S0804** obsługują edytor.
+
+Panel i jego API wymagają administratora HA. Odczyty są uwierzytelnione przez istniejącą sesję Home Assistant; nie tworzą nowego publicznego portu. Edytor nie zmienia adresów ID ani konfiguracji sieciowej.

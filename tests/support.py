@@ -1,6 +1,7 @@
 """Import the standalone wire library without importing Home Assistant."""
 
 import asyncio
+import copy
 import importlib
 import sys
 import time
@@ -38,6 +39,20 @@ class Emulator:
             for m in self.modules
             for ch in range(1, m.thermostats + 1)
         }
+        self.rules = {
+            (m.id, n): {
+                "enabled": 0,
+                "events": [0] * m.inputs,
+                "actions": [0] * (m.shutters or m.outputs),
+                "positions": [0] * (m.shutters or m.outputs),
+                "slots": [{"target": 0, "type": 0, "data": []} for _ in range(4)],
+                "pwm": [0, 0, 0] if m.pwm else None,
+                "temperature": [0, 0, 1, 1, 220, 5, 20] if m.thermostats else None,
+            }
+            for m in self.modules
+            for n in range(1, 17)
+        }
+        self.saved_rules = None
         self.ignore = None
         self.server = None
 
@@ -88,6 +103,77 @@ class Emulator:
         module = next((m for m in self.modules if m.id == address), None)
         if module is None:
             return None
+        if name in (
+            "GetRule",
+            "GetRuleRemote",
+            "GetRulePWM",
+            "GetRuleTemp",
+            "Rule",
+            "RuleRemote",
+            "RulePWM",
+            "RuleTemp",
+            "RulePulse",
+        ):
+            try:
+                values = protocol.checked(text)
+                rule = self.rules[address, values[1]]
+                number = values[1]
+                if name.startswith("Get"):
+                    kind = name[3:]
+                    if kind == "Rule":
+                        local = (
+                            [
+                                v
+                                for pair in zip(rule["actions"], rule["positions"], strict=True)
+                                for v in pair
+                            ]
+                            if module.shutters
+                            else rule["actions"]
+                        )
+                        values = [address, number, rule["enabled"], *rule["events"], *local]
+                    elif kind == "RuleRemote":
+                        slot = rule["slots"][values[2] - 1]
+                        values = [
+                            address,
+                            number,
+                            values[2],
+                            slot["target"],
+                            slot["type"],
+                            *slot["data"],
+                        ]
+                    else:
+                        values = [
+                            address,
+                            number,
+                            *rule["pwm" if kind == "RulePWM" else "temperature"],
+                        ]
+                    return kind + "=" + ",".join(map(str, [*values, sum(values)]))
+                if name == "Rule":
+                    rule["enabled"] = values[2]
+                    rule["events"] = values[3 : 3 + module.inputs]
+                    local = values[3 + module.inputs :]
+                    rule["actions"] = local[::2] if module.shutters else local
+                    rule["positions"] = local[1::2] if module.shutters else [0] * module.outputs
+                elif name == "RuleRemote":
+                    if values[2] == 0:
+                        rule["slots"] = [{"target": 0, "type": 0, "data": []} for _ in range(4)]
+                    else:
+                        rule["slots"][values[2] - 1] = {
+                            "target": values[3],
+                            "type": values[4],
+                            "data": values[5:],
+                        }
+                elif name == "RulePulse":
+                    rule["slots"][values[2] - 1] = {
+                        "target": values[3],
+                        "type": 5,
+                        "data": [values[4], values[5] & 255, values[5] >> 8, values[6]],
+                    }
+                else:
+                    rule["pwm" if name == "RulePWM" else "temperature"] = values[2:]
+                return f"RuleOK={address}"
+            except (protocol.ProtocolError, KeyError, IndexError, TypeError):
+                return f"RuleERROR={address}"
         if name == "GetInputs":
             return f"I={address}," + ",".join(map(str, self.inputs[address]))
         if name == "GetPWM" and getattr(self, "pwm_motion", False):
@@ -148,6 +234,7 @@ class Emulator:
             cfg = self.configs[address, channel]
             return f"THERM={address},{channel},{cfg.mode},{cfg.cooling},1,205,{cfg.setpoint},{cfg.hysteresis},0"
         if name == "SaveConfig":
+            self.saved_rules = copy.deepcopy(self.rules)
             return f"SaveOK={address}"
         return f"RuleERROR={address}"
 

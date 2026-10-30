@@ -84,6 +84,50 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         ]:
             self.assertEqual(sum(entity.domain == domain for entity in entities), expected, domain)
 
+        import inspect
+        from types import SimpleNamespace
+
+        from custom_components.gryfsmart import panel
+
+        self.assertIn("gryfsmart-config", self.hass.data["frontend_panels"])
+
+        class Connection:
+            user = SimpleNamespace(id="admin-test", is_admin=True)
+            result = error = None
+
+            def send_result(self, msg_id, result):
+                self.result = result
+
+            def send_error(self, msg_id, code, message):
+                self.error = code, message
+
+        connection = Connection()
+        handler = inspect.unwrap(panel.config_command)
+        request = {
+            "id": 900,
+            "type": "gryfsmart/config",
+            "action": "read",
+            "entry": entry.entry_id,
+            "module": 3,
+            "rule": 16,
+        }
+        await handler(self.hass, connection, request)
+        self.assertIsNone(connection.error)
+        token = connection.result["token"]
+        rule = connection.result["configuration"]
+        rule["events"][0] = 4
+        rule["enabled"] = 1
+        save_request = dict(request, action="save", token=token, configuration=rule)
+        await handler(self.hass, connection, save_request)
+        self.assertIsNone(connection.error)
+        self.assertEqual(self.emulator.saved_rules[3, 16], rule)
+        await handler(self.hass, connection, save_request)
+        self.assertEqual(connection.error[0], "configuration_error")
+        non_admin = Connection()
+        non_admin.user = SimpleNamespace(id="guest", is_admin=False)
+        await handler(self.hass, non_admin, dict(request, action="modules"))
+        self.assertEqual(non_admin.error[0], "unauthorized")
+
         def entity_id(suffix):
             return next(
                 entity.entity_id for entity in entities if entity.unique_id.endswith(suffix)

@@ -9,6 +9,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from .client import GryfClient
 from .const import PLATFORMS
+from .panel import register, unregister
 from .protocol import ProtocolError
 
 _LOGGER = logging.getLogger(__name__)
@@ -103,7 +104,13 @@ async def async_setup_entry(hass, entry):
         await hub.stop()
         raise ConfigEntryNotReady(str(error)) from error
     entry.runtime_data = hub
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    try:
+        await register(hass, entry, hub)
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    except Exception:
+        unregister(hass, entry)
+        await hub.stop()
+        raise
     entry.async_on_unload(entry.add_update_listener(_reload))
     # A background task does not hold HA startup open for this permanent loop.
     hub.task = entry.async_create_background_task(hass, hub.run(), "gryfsmart-monitor")
@@ -116,6 +123,7 @@ async def _reload(hass, entry):
 
 async def async_unload_entry(hass, entry):
     if await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        unregister(hass, entry)
         await entry.runtime_data.stop()
         return True
     return False
