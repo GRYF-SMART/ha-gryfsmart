@@ -80,6 +80,7 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
             ("climate", 4),
             ("sensor", 14),
             ("button", 5),
+            ("number", 1),
         ]:
             self.assertEqual(sum(entity.domain == domain for entity in entities), expected, domain)
 
@@ -111,6 +112,19 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.hass.states.get(climate).state, "heat")
         self.assertEqual(self.emulator.configs[3, 1].setpoint, 235)
         self.assertEqual(self.emulator.configs[3, 1].outputs, ((0, 2, 1),))
+        pwm = entity_id("_R0806T_3_pwm")
+        self.assertEqual(self.hass.states.get(pwm).state, "0")
+        await self.hass.services.async_call(
+            "number", "set_value", {"entity_id": pwm, "value": 50}, blocking=True
+        )
+        await self.hass.async_block_till_done()
+        self.assertEqual(float(self.hass.states.get(pwm).state), 50)
+        self.assertIn("AT+PWM=3,4,50,57", self.emulator.commands)
+        await self.emulator.broadcast("PWM=3,20,70,70,1,2000")
+        await self.hass.async_block_till_done()
+        self.assertEqual(float(self.hass.states.get(pwm).state), 20)
+        self.assertEqual(self.hass.states.get(pwm).attributes["target_percent"], 70)
+
         event = entity_id("_ETH0606T_1_event_1")
         self.assertEqual(self.hass.states.get(event).state, "unknown")
         for frame, event_type in [

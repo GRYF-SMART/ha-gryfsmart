@@ -91,6 +91,21 @@ class ProtocolTests(unittest.TestCase):
         self.assertIsNone(self.store.apply(good[:-1] + "0"))
         self.assertEqual(self.store.apply("R=4,0,1,0,0")[2], [1, 2, 3, 4])
 
+    def test_pwm_reports_are_validated_and_model_specific(self):
+        self.assertIsNotNone(self.store.apply("PWM=3,20,70,70,1,2000"))
+        self.assertEqual(self.store.states[3].pwm, (20, 70, 70, 1, 2000))
+        for line in (
+            "PWM=3,101,70,70,1,2000",
+            "PWM=3,-1,70,70,1,2000",
+            "PWM=3,20,70,70,2,2000",
+            "PWM=3,20,70,70,0,0",
+            "PWM=3,20,70",
+            "PWM=5,20,70,70,0,2000",
+            "PWM=1,20,70,70,0,2000",
+        ):
+            self.assertIsNone(self.store.apply(line), line)
+        self.assertEqual(self.store.states[3].pwm[0], 20)
+
     def test_thermostat_preserves_settings(self):
         cfg = p.ThermostatConfig(1, 0, 2, 2, -50, 7, ((0, 2, 6), (8, 3, 8)))
         command = cfg.command(3, 1)
@@ -116,6 +131,24 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         await self.client.close()
         await self.emulator.stop()
+
+    async def test_pwm_control_readback_and_external_update(self):
+        await self.client.discover()
+        await self.client.refresh()
+        self.assertEqual(self.client.store.states[3].pwm[0], 0)
+        for value in (50, 100, 0):
+            await self.client.pwm(3, value)
+            self.assertIn(p.csv("PWM", 3, 4, value), self.emulator.commands)
+            self.assertEqual(self.client.store.states[3].pwm[0], value)
+        await self.emulator.broadcast("PWM=3,25,70,70,1,2000")
+        self.assertEqual(self.client.store.states[3].pwm, (25, 70, 70, 1, 2000))
+        before = len(self.emulator.commands)
+        for address, value in ((5, 50), (1, 50), (3, -1), (3, 101), (3, 0.1), (3, float("nan"))):
+            with self.assertRaises(p.ProtocolError):
+                await self.client.pwm(address, value)
+        self.assertEqual(len(self.emulator.commands), before)
+        await self.client.close()
+        self.assertIsNone(self.client.store.states[3].pwm)
 
     async def test_discovery_stops_and_reads_all_models(self):
         start = time.monotonic()

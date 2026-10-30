@@ -89,6 +89,14 @@ class Emulator:
             return None
         if name == "GetInputs":
             return f"I={address}," + ",".join(map(str, self.inputs[address]))
+        if name == "GetPWM":
+            return f"PWM={address},{getattr(self, 'pwm_level', 0)},{getattr(self, 'pwm_level', 0)},70,0,2000"
+        if name == "PWM":
+            values = list(map(int, fields))
+            if address != 3 or sum(values[:-1]) != values[-1]:
+                return f"PWMERROR={address}"
+            self.pwm_level = values[2]
+            return f"RuleOK={address}"
         if name == "GetOut":
             return f"o={address}," + ",".join(map(str, self.outputs[address]))
         if name == "SetOut":

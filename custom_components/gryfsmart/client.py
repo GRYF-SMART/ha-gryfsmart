@@ -102,6 +102,7 @@ class GryfClient:
             state.online = False
             # Reconnect does not turn initial snapshots into contact events.
             state.inputs = state.outputs = None
+            state.pwm = None
             state.shutters.clear()
             state.temperatures.clear()
             state.thermostats.clear()
@@ -126,7 +127,12 @@ class GryfClient:
                     if self.pending:
                         future, predicate, address = self.pending
                         if not future.done():
-                            if address is not None and line == f"RuleERROR={address}":
+                            if address is not None and (
+                                line == f"RuleERROR={address}"
+                                or line == f"PWMERROR={address}"
+                                or line.startswith(f"PWMERROR={address},")
+                                or line == "ERROR=SERVICE_BUSY"
+                            ):
                                 future.set_exception(ProtocolError(line))
                             elif predicate(line):
                                 future.set_result(line)
@@ -243,6 +249,8 @@ class GryfClient:
                         and self.store.apply(line) is not None
                     ),
                 )
+            if module.pwm:
+                await self.read_pwm(module.id)
             for channel in range(1, module.shutters + 1):
                 await self.read_shutter(module.id, channel)
             for channel in range(1, module.thermostats + 1):
@@ -298,6 +306,30 @@ class GryfClient:
             ),
         )
         return self.store.states[address].configs[channel]
+
+    async def read_pwm(self, address):
+        if not self.modules[address].pwm:
+            raise ProtocolError("This module has no PWM output")
+        await self.request(
+            f"AT+GetPWM={address}",
+            lambda line: line.startswith(f"PWM={address},") and self.store.apply(line) is not None,
+        )
+
+    async def pwm(self, address, percent):
+        if (
+            not self.modules[address].pwm
+            or not isinstance(percent, (int, float))
+            or not 0 <= percent <= 100
+            or percent != int(percent)
+        ):
+            raise ProtocolError("PWM requires R0806T and an integer percentage 0..100")
+        async with self.control_lock:
+            await self.request(
+                csv("PWM", address, 4, int(percent)),
+                lambda line: line == f"RuleOK={address}",
+                mutation=True,
+            )
+            await self.read_pwm(address)
 
     async def relay(self, address, channel, enabled):
         module = self.modules[address]

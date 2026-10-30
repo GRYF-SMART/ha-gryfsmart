@@ -57,6 +57,10 @@ class Module:
         return 2 if self.model in ("R0808", "R0806T") else 0
 
     @property
+    def pwm(self):
+        return self.model == "R0806T"
+
+    @property
     def old(self):
         return self.model == "R0806T-OLD"
 
@@ -164,6 +168,7 @@ class ModuleState:
     temperatures: dict[int, tuple[float, float]] = field(default_factory=dict)
     configs: dict[int, ThermostatConfig] = field(default_factory=dict)
     thermostats: dict[int, tuple] = field(default_factory=dict)
+    pwm: tuple[int, int, int, int, int] | None = None
     last_seen: float = 0
     online: bool = False
 
@@ -195,6 +200,7 @@ class StateStore:
             "PL",
             "TEMP",
             "THERM",
+            "PWM",
         ):
             return None
         values = numbers(text)
@@ -250,6 +256,16 @@ class StateStore:
             ):
                 return None
             state.shutters[channel] = tuple(values[2:])
+        elif prefix == "PWM":
+            if (
+                not module.pwm
+                or len(values) != 6
+                or any(not 0 <= value <= 100 for value in values[1:4])
+                or values[4] not in (0, 1)
+                or not 1 <= values[5] <= 65535
+            ):
+                return None
+            state.pwm = tuple(values[1:])
         elif prefix == "T":
             if len(values) not in (3, 4) or not 1 <= values[1] <= module.temperatures:
                 return None

@@ -1,11 +1,11 @@
 """Constants shared by the integration and the wire protocol."""
 
 DOMAIN = "gryfsmart"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 DEFAULT_PORT = 5000
 BAUDRATE = 115200
 TIMEOUT = 2.0
-PLATFORMS = ["binary_sensor", "switch", "cover", "sensor", "event", "climate", "button"]
+PLATFORMS = ["binary_sensor", "switch", "cover", "sensor", "event", "climate", "button", "number"]
 
 # inputs, relay outputs, shutters, temperature channels, minimum firmware
 PROFILES = {

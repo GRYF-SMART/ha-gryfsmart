@@ -80,3 +80,11 @@ Pobierz paczkę `GRYFSMART-HomeAssistant-0.1.0.zip` z [wydań](https://github.co
 Testy obejmują ramki CR/LF, CRC CHAIN1, wykrywanie pięciu modeli, koniec skanu po 2 s, powielone ID, komendy przekaźników i rolet, temperatury ujemne, cztery rodzaje zdarzeń, zachowanie konfiguracji termostatów oraz brak ponawiania zapisów po timeout. Połączenie szeregowe jest testowane przez transport asynchroniczny i wirtualny port; testy nie programują urządzeń. Osobny test uruchamia integrację i usługi encji w Home Assistant na Linux.
 
 Walidacja programowa nie zastępuje sprawdzenia rzeczywistego okablowania i modułów w instalacji.
+
+## PWM — wersja 0.2.0
+
+R0806T automatycznie otrzymuje encję `number` o nazwie PWM: suwak 0–100%, krok 1%. Zero wyłącza wyjście; większa wartość ustawia wypełnienie. Stan pochodzi z odczytu sprzętu i raportów po zmianie, także zmianie z reguły lub GRYFEXPERT. Atrybuty: cel, ostatni niezerowy poziom, aktywna rampa i częstotliwość. ETH, R0808, S0804 i OLD nie otrzymują tej encji, bo nie mają lokalnego PWM.
+
+Protokół: `AT+PWM=3,4,50,57` ustawia 50% w module ID 3. Potwierdzenie `RuleOK=3`, następnie `AT+GetPWM=3` i raport `PWM=3,50,50,50,0,2000`. Bez nowego firmware, bez zapisu EEPROM przy ruchu suwaka. Dotychczasowa minimalna wersja R0806T 27 obsługuje te komendy. Działa przez Ethernet (HA port 5000) i RS-232.
+
+Po aktualizacji integracji uruchom HA ponownie. Nowa encja pojawi się po załadowaniu integracji, bez ponownego dodawania instalacji. ETH firmware 27 umożliwia równoległe połączenie GRYFEXPERT na porcie 5002.
