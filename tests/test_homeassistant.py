@@ -119,7 +119,7 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         )
         await self.hass.async_block_till_done()
         self.assertEqual(float(self.hass.states.get(pwm).state), 50)
-        self.assertIn("AT+PWM=3,4,50,57", self.emulator.commands)
+        self.assertIn("AT+PWM=3,4,50,15,72", self.emulator.commands)
         await self.emulator.broadcast("PWM=3,20,70,70,1,2000")
         await self.hass.async_block_till_done()
         self.assertEqual(float(self.hass.states.get(pwm).state), 20)

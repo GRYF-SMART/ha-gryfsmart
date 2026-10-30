@@ -85,6 +85,10 @@ Walidacja programowa nie zastępuje sprawdzenia rzeczywistego okablowania i modu
 
 R0806T automatycznie otrzymuje encję `number` o nazwie PWM: suwak 0–100%, krok 1%. Zero wyłącza wyjście; większa wartość ustawia wypełnienie. Stan pochodzi z odczytu sprzętu i raportów po zmianie, także zmianie z reguły lub GRYFEXPERT. Atrybuty: cel, ostatni niezerowy poziom, aktywna rampa i częstotliwość. ETH, R0808, S0804 i OLD nie otrzymują tej encji, bo nie mają lokalnego PWM.
 
-Protokół: `AT+PWM=3,4,50,57` ustawia 50% w module ID 3. Potwierdzenie `RuleOK=3`, następnie `AT+GetPWM=3` i raport `PWM=3,50,50,50,0,2000`. Bez nowego firmware, bez zapisu EEPROM przy ruchu suwaka. Dotychczasowa minimalna wersja R0806T 27 obsługuje te komendy. Działa przez Ethernet (HA port 5000) i RS-232.
+Protokół: `AT+PWM=3,4,50,15,72` ustawia 50% w module ID 3. Potwierdzenie `RuleOK=3`, następnie `AT+GetPWM=3` i raport `PWM=3,50,50,50,0,2000`. Bez nowego firmware, bez zapisu EEPROM przy ruchu suwaka. Dotychczasowa minimalna wersja R0806T 27 obsługuje te komendy. Działa przez Ethernet (HA port 5000) i RS-232.
 
 Po aktualizacji integracji uruchom HA ponownie. Nowa encja pojawi się po załadowaniu integracji, bez ponownego dodawania instalacji. ETH firmware 27 umożliwia równoległe połączenie GRYFEXPERT na porcie 5002.
+
+## PWM — wersja 0.2.1
+
+Każda zmiana suwakiem wysyła rampę 1,5 s (15 jednostek po 0,1 s), również przejście do 0%. Rampę wykonuje sprzętowy firmware modułu, bez wysyłania serii małych kroków z HA. Nowe ustawienie podczas rampy przechodzi od aktualnego poziomu do nowego celu. Stan encji pozostaje odczytem rzeczywistym; zakończenie rampy aktualizuje raport PWM. Nie potrzeba nowego HEX-u.

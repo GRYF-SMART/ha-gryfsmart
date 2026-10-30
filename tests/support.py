@@ -93,7 +93,7 @@ class Emulator:
             return f"PWM={address},{getattr(self, 'pwm_level', 0)},{getattr(self, 'pwm_level', 0)},70,0,2000"
         if name == "PWM":
             values = list(map(int, fields))
-            if address != 3 or sum(values[:-1]) != values[-1]:
+            if address != 3 or len(values) != 5 or values[3] != 15 or sum(values[:-1]) != values[-1]:
                 return f"PWMERROR={address}"
             self.pwm_level = values[2]
             return f"RuleOK={address}"

@@ -138,7 +138,7 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.client.store.states[3].pwm[0], 0)
         for value in (50, 100, 0):
             await self.client.pwm(3, value)
-            self.assertIn(p.csv("PWM", 3, 4, value), self.emulator.commands)
+            self.assertIn(p.csv("PWM", 3, 4, value, 15), self.emulator.commands)
             self.assertEqual(self.client.store.states[3].pwm[0], value)
         await self.emulator.broadcast("PWM=3,25,70,70,1,2000")
         self.assertEqual(self.client.store.states[3].pwm, (25, 70, 70, 1, 2000))

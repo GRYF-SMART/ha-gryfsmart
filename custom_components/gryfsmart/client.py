@@ -325,7 +325,7 @@ class GryfClient:
             raise ProtocolError("PWM requires R0806T and an integer percentage 0..100")
         async with self.control_lock:
             await self.request(
-                csv("PWM", address, 4, int(percent)),
+                csv("PWM", address, 4, int(percent), 15),
                 lambda line: line == f"RuleOK={address}",
                 mutation=True,
             )
