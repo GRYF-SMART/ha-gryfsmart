@@ -1,5 +1,7 @@
 """Read-only EEPROM labels: 18 Polish/ASCII characters; no firmware writes."""
+
 import re
+
 from .protocol import ProtocolError, crc16
 
 POLISH = "ĄĆĘŁŃÓŚŹŻąćęłńóśźż"
@@ -11,18 +13,24 @@ def supported(module):
 
 
 def keys(module):
-    return (["module"] + [f"input_{n}" for n in range(1, module.inputs + 1)]
-            + [f"cover_{n}" if module.shutters else f"relay_{n}" for n in range(1, (module.shutters or module.outputs) + 1)]
-            + [f"thermostat_{n}" for n in range(1, module.thermostats + 1)]
-            + [f"temperature_{n}" for n in range(1, (2 if module.thermostats else 0) + 1)]
-            + (["pwm"] if module.pwm else []))
+    return (
+        ["module"]
+        + [f"input_{n}" for n in range(1, module.inputs + 1)]
+        + [
+            f"cover_{n}" if module.shutters else f"relay_{n}"
+            for n in range(1, (module.shutters or module.outputs) + 1)
+        ]
+        + [f"thermostat_{n}" for n in range(1, module.thermostats + 1)]
+        + [f"temperature_{n}" for n in range(1, (2 if module.thermostats else 0) + 1)]
+        + (["pwm"] if module.pwm else [])
+    )
 
 
 def parse(line, address, slot):
     match = re.fullmatch(r"Name=(\d+),(\d+),([0-9A-F]*),([0-9A-F]{4})", line)
     if not match or int(match[1]) != address or int(match[2]) != slot:
         raise ProtocolError("Invalid EEPROM name address/index/format")
-    body = line[5:line.rfind(",")]
+    body = line[5 : line.rfind(",")]
     if crc16(body) != int(match[4], 16):
         raise ProtocolError("Invalid EEPROM name CRC")
     try:

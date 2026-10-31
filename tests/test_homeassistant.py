@@ -35,7 +35,7 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
                     "elevation": 100,
                     "unit_system": "metric",
                     "time_zone": "UTC",
-                }
+                },
             },
             self.hass,
         )
@@ -199,6 +199,72 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         await self.hass.config_entries.async_unload(entry.entry_id)
         await self.hass.async_block_till_done()
         self.assertFalse(hub.client.connected)
+
+    async def test_eeprom_names_and_stable_registry(self):
+        from dataclasses import replace
+
+        from homeassistant.helpers import entity_registry as er
+
+        from .support import protocol as wire
+
+        versions = {
+            "ETH0606T": "29",
+            "R0808": "29",
+            "R0806T": "29",
+            "S0804": "30",
+            "R0806T-OLD": "6",
+        }
+        self.emulator.modules = [
+            replace(m, firmware=versions[m.model]) for m in self.emulator.modules
+        ]
+        original_reply = self.emulator.reply
+        polish = "ĄĆĘŁŃÓŚŹŻąćęłńóśźż"
+        content = polish
+
+        def reply(command):
+            if command.startswith("AT+NameGet="):
+                body = (
+                    command[11:] + "," + bytes(128 + polish.index(c) for c in content).hex().upper()
+                )
+                return f"Name={body},{wire.crc16(body):04X}"
+            return original_reply(command)
+
+        self.emulator.reply = reply
+        flow = await self.hass.config_entries.flow.async_init(
+            "gryfsmart", context={"source": "user"}
+        )
+        flow = await self.hass.config_entries.flow.async_configure(
+            flow["flow_id"], {"next_step_id": "ethernet"}
+        )
+        flow = await self.hass.config_entries.flow.async_configure(
+            flow["flow_id"], {"host": self.settings["host"], "port": self.settings["port"]}
+        )
+        await self.hass.async_block_till_done()
+        entry = flow["result"]
+        self.assertEqual(entry.state.value, "loaded")
+        registry = er.async_get(self.hass)
+        entities = er.async_entries_for_config_entry(registry, entry.entry_id)
+        target = next(e for e in entities if e.unique_id.endswith("_R0808_2_input_1"))
+        self.assertTrue(
+            self.hass.states.get(target.entity_id).attributes["friendly_name"].endswith(polish)
+        )
+        saved_ids = {e.unique_id: e.entity_id for e in entities}
+        registry.async_update_entity(target.entity_id, name="Moja nazwa HA")
+        content = "ĄĆ"
+        await self.hass.config_entries.async_reload(entry.entry_id)
+        await self.hass.async_block_till_done()
+        self.assertEqual(
+            saved_ids,
+            {
+                e.unique_id: e.entity_id
+                for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+            },
+        )
+        self.assertEqual(registry.async_get(target.entity_id).name, "Moja nazwa HA")
+        self.assertEqual(entry.runtime_data.client.modules[2].names["input_1"], "ĄĆ")
+        self.assertFalse(
+            any(c.startswith(("AT+NameSet=", "AT+SaveConfig=")) for c in self.emulator.commands)
+        )
 
     async def test_serial_config_form(self):
         from homeassistant.data_entry_flow import FlowResultType
