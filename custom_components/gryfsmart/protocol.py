@@ -22,6 +22,7 @@ class Module:
     model: str
     firmware: str
     position: int = 0
+    names: dict[str, str] = field(default_factory=dict, compare=False)
 
     def __post_init__(self):
         if self.model not in PROFILES or not 1 <= self.id <= 35:

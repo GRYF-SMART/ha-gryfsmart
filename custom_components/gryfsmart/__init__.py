@@ -42,6 +42,7 @@ class GryfHub:
     async def start(self):
         await self.client.connect()
         await self.client.discover()
+        await self.client.read_names()
         await self.client.refresh()
 
     async def run(self):
@@ -60,6 +61,7 @@ class GryfHub:
                         saved_mac = self.client.settings.get("gateway_mac")
                         if saved_mac and self.client.gateway_mac != saved_mac:
                             raise ProtocolError("Gateway MAC changed")
+                        await self.client.read_names()
                         await self.client.refresh()
                         next_poll, reconnect_delay = time.monotonic() + 30, 2
                     if time.monotonic() >= next_poll:

@@ -4,6 +4,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
 from .const import DOMAIN
+from .names import label
 from .protocol import ProtocolError
 
 
@@ -16,14 +17,18 @@ class GryfEntity(Entity):
         namespace = hub.entry.unique_id or hub.entry.entry_id
         identifier = f"{namespace}_{module.model}_{module.id}"
         self._attr_unique_id = f"{identifier}_{key}"
-        self._attr_name = name
+        self._name_key, self._fallback_name = key, name
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, identifier)},
-            name=f"{module.model} ID {module.id}",
+            name=label(module, "module", f"{module.model} ID {module.id}"),
             manufacturer="GRYFSMART",
             model=module.model,
             sw_version=module.firmware,
         )
+
+    @property
+    def name(self):
+        return label(self.module, self._name_key, self._fallback_name)
 
     @property
     def module_state(self):

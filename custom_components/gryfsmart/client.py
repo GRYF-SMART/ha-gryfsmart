@@ -6,6 +6,7 @@ import re
 from contextlib import suppress
 from dataclasses import replace
 
+from . import names as eeprom_names
 from .const import BAUDRATE, DEFAULT_PORT, TIMEOUT
 from .protocol import Framer, ProtocolError, StateStore, chain, csv, find
 
@@ -232,6 +233,27 @@ class GryfClient:
         self.modules = found
         self.store = StateStore(found)
         return found
+
+    async def read_names(self):
+        """Load one snapshot per module; unsupported firmware keeps generic names."""
+        for module in self.modules.values():
+            if not eeprom_names.supported(module):
+                continue
+            labels = {}
+            try:
+                for slot, key in enumerate(eeprom_names.keys(module)):
+                    line = await self.request(
+                        f"AT+NameGet={module.id},{slot}",
+                        lambda value, address=module.id, index=slot: value.startswith((f"Name={address},{index},", f"NameERROR={address},{index},")),
+                    )
+                    if line.startswith("NameERROR="):
+                        raise ProtocolError(line)
+                    labels[key] = eeprom_names.parse(line, module.id, slot)
+            except (TimeoutError, ProtocolError) as error:
+                _LOGGER.warning("EEPROM names for %s ID %s unavailable; keeping previous/default labels: %s", module.model, module.id, error)
+                continue
+            module.names = labels
+        self.on_change()
 
     async def read_module(self, module, *, verify=True):
         state = self.store.states[module.id]

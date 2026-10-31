@@ -111,3 +111,8 @@ Panel odrzuca edycję starego odczytu (10 minut, zmiana użytkownika/instalacji 
 **OLD** jest widoczny, ale nie jest edytowany w tym panelu, ponieważ jego firmware nie udostępnia odczytu konfiguracji potrzebnego do kontroli zmian. Do OLD użyj GRYFEXPERT. **ETH0606T, R0808, R0806T i S0804** obsługują edytor.
 
 Panel i jego API wymagają administratora HA. Odczyty są uwierzytelnione przez istniejącą sesję Home Assistant; nie tworzą nowego publicznego portu. Edytor nie zmienia adresów ID ani konfiguracji sieciowej.
+
+## 0.3.1 — nazwy z EEPROM
+Po uruchomieniu/przeładowaniu integracji i po ponownym połączeniu HA odczytuje nazwy z modułów przed utworzeniem encji. Nie trzeba logować się ponownie do interfejsu HA. Nazwy modułu, wejść, wyjść/rolet, regulatorów, czujników R0806T/R0808 oraz PWM są odczytywane przez NameGet. Wymagane firmware ETH/R0808/R0806T 29, S0804 30, OLD 6. Czujniki ETH zachowują dotychczasowe etykiety — firmware ETH nie udostępnia dla nich pól nazw EEPROM.
+Starszy firmware, puste nazwy lub błąd odczytu zachowują nazwy domyślne/ostatnie; problem nazwy nie blokuje sterowania. Nazwy użytkownika ustawione w rejestrze encji/urządzeń HA mają pierwszeństwo. Identyfikatory unique_id nie zmieniają się. Integracja wyłącznie odczytuje nazwy: nie wysyła NameSet ani SaveConfig. Nazwy nadaj w GRYFEXPERT 0.5.20 → Informacje → Nazwy zapisane w module. Po zmianie nazw przeładuj integrację HA.
+Aktualizacja: HACS → GRYFSMART → pobierz 0.3.1, następnie uruchom ponownie cały Home Assistant.
