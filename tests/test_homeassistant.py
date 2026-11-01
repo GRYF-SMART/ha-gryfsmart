@@ -293,7 +293,18 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
 
         devices = dr.async_get(self.hass)
         devices.async_update_device(target.device_id, name_by_user="Pokój HA")
-        self.assertEqual(await entry.runtime_data.refresh_names(), [])
+        import inspect
+
+        from custom_components.gryfsmart.panel import refresh_names_command
+
+        replies = []
+        connection = SimpleNamespace(
+            user=SimpleNamespace(is_admin=True),
+            send_result=lambda _, result: replies.append(result),
+            send_error=lambda _, code, message: replies.append((code, message)),
+        )
+        await inspect.unwrap(refresh_names_command)(self.hass, connection, {"id": 901})
+        self.assertEqual(replies, [{"errors": []}])
         await self.hass.async_block_till_done()
         self.assertEqual(registry.async_get(target.entity_id).original_name, content)
         self.assertEqual(devices.async_get(target.device_id).name, content)

@@ -23,6 +23,7 @@ test("GRYFSMART card in a real browser", async (t) => {
         module: "Sypialnia", entity_id: `${domain}.gryf_${i}`, name, section, channel: i }));
       window.fixture.push({ ...fixture[0], module_id: 3, entity_id: "switch.module3" });
       window.fixture.push({ ...fixture[0], entry: "hub2", hub: "Garaż", entity_id: "switch.hub2" });
+      window.initialFixture = structuredClone(fixture);
       window.loadCardHelpers = async () => ({ createCardElement(config) {
         const card = document.createElement("section");
         card.config = config;
@@ -123,7 +124,13 @@ test("GRYFSMART card in a real browser", async (t) => {
     });
     await t.test("mobile layout fits the available width", async () => {
       await page.setViewportSize({ width: 390, height: 844 });
-      assert(await page.evaluate(() => document.documentElement.scrollWidth <= 390));
+      assert(await page.evaluate(async () => {
+        fixture = structuredClone(initialFixture);
+        card.setConfig({ type: "custom:gryfsmart-system-card" });
+        while (card._fetching) await new Promise(resolve => setTimeout(resolve, 5));
+        await card.refresh();
+        return card._cards.size === 3 && document.documentElement.scrollWidth <= 390;
+      }));
     });
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
