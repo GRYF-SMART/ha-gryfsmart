@@ -125,3 +125,9 @@ W panelu konfiguracji reguł PWM są dwie osobne akcje:
 
 Nowa akcja wymaga firmware R0806T 31, R0808 31, ETH0606T 32, S0804 32 lub OLD 9 odpowiednio na celu, źródle reguły i drodze transmisji. OLD steruje PWM zdalnie, nie ma lokalnego PWM. Najpierw zaktualizuj moduły. Dotychczasowe akcje są zgodne ze starszym firmware.
 Po aktualizacji integracji przez HACS uruchom ponownie HA. Nie trzeba usuwać integracji ani ponownie dodawać urządzeń.
+
+## Karta wszystkich wyjść GRYFSMART (0.3.3)
+
+Nowa opcjonalna karta Lovelace „GRYFSMART — cała instalacja” zbiera encje przekaźników, rolet i PWM ze wszystkich hubów oraz modułów tej integracji. Urządzenia i encje nadal pozostają osobno na swoich stronach HA. Dodaj kartę raz z selektora kart na widoku Przegląd; karta odświeża listę modułów i ich encji automatycznie. Urządzenia offline pozostają widoczne ze stanem niedostępności.
+
+Aktualizuj integrację w HACS do 0.3.3 i uruchom ponownie Home Assistanta. Otwórz Przegląd → Edytuj pulpit → Dodaj kartę, wyszukaj „GRYFSMART — cała instalacja” i ją wybierz. Karta nie wymaga dodatkowej konfiguracji.
