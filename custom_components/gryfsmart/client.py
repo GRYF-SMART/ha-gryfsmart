@@ -236,6 +236,7 @@ class GryfClient:
 
     async def read_names(self):
         """Load one snapshot per module; unsupported firmware keeps generic names."""
+        errors = []
         for module in self.modules.values():
             if not eeprom_names.supported(module):
                 continue
@@ -251,9 +252,11 @@ class GryfClient:
                     labels[key] = eeprom_names.parse(line, module.id, slot)
             except (TimeoutError, ProtocolError) as error:
                 _LOGGER.warning("EEPROM names for %s ID %s unavailable; keeping previous/default labels: %s", module.model, module.id, error)
+                errors.append(f"{module.model} ID {module.id}: {error}")
                 continue
             module.names = labels
         self.on_change()
+        return errors
 
     async def read_module(self, module, *, verify=True):
         state = self.store.states[module.id]

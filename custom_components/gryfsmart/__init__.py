@@ -11,6 +11,7 @@ from .client import GryfClient
 from .const import PLATFORMS
 from .panel import register, unregister
 from .protocol import ProtocolError
+from .system import sync_names
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class GryfHub:
         self.listeners, self.event_listeners = set(), {}
         self.client = GryfClient(dict(entry.data) | dict(entry.options), self.changed, self.event)
         self.task = None
+        self.names_lock = asyncio.Lock()
 
     def changed(self):
         for listener in tuple(self.listeners):
@@ -42,8 +44,15 @@ class GryfHub:
     async def start(self):
         await self.client.connect()
         await self.client.discover()
-        await self.client.read_names()
+        await self.refresh_names()
         await self.client.refresh()
+
+    async def refresh_names(self):
+        async with self.names_lock:
+            errors = await self.client.read_names()
+            sync_names(self.hass, self.entry, self)
+            self.changed()
+            return errors
 
     async def run(self):
         """Poll independently of push traffic; refresh moving covers every second."""
@@ -61,7 +70,7 @@ class GryfHub:
                         saved_mac = self.client.settings.get("gateway_mac")
                         if saved_mac and self.client.gateway_mac != saved_mac:
                             raise ProtocolError("Gateway MAC changed")
-                        await self.client.read_names()
+                        await self.refresh_names()
                         await self.client.refresh()
                         next_poll, reconnect_delay = time.monotonic() + 30, 2
                     if time.monotonic() >= next_poll:

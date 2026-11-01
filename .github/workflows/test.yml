@@ -6,6 +6,18 @@ on:
 permissions:
   contents: read
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --prefix "$RUNNER_TEMP/gryfsmart-card-tests" playwright
+      - run: node "$RUNNER_TEMP/gryfsmart-card-tests/node_modules/playwright/cli.js" install --with-deps chromium
+      - run: node --test tests/system-card.test.cjs
+        env:
+          GRYFSMART_PLAYWRIGHT: ${{ runner.temp }}/gryfsmart-card-tests/node_modules/playwright
   test:
     runs-on: ubuntu-latest
     strategy:

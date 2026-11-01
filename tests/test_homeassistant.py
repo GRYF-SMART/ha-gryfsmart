@@ -93,7 +93,11 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("gryfsmart-config", self.hass.data["frontend_panels"])
 
         class Connection:
-            user = SimpleNamespace(id="admin-test", is_admin=True)
+            user = SimpleNamespace(
+                id="admin-test",
+                is_admin=True,
+                permissions=SimpleNamespace(check_entity=lambda *args: True),
+            )
             result = error = None
 
             def send_result(self, msg_id, result):
@@ -103,6 +107,36 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
                 self.error = code, message
 
         connection = Connection()
+        overview = inspect.unwrap(panel.system_entities_command)
+        commands_before = list(self.emulator.commands)
+        await overview(self.hass, connection, {"id": 899})
+        self.assertIsNone(connection.error)
+        self.assertEqual(len(connection.result), len(entities))
+        self.assertEqual(
+            {row["entity_id"].split(".")[0] for row in connection.result},
+            {"switch", "cover", "number", "binary_sensor", "event", "climate", "sensor", "button"},
+        )
+        self.assertEqual({row["module_id"] for row in connection.result}, {1, 2, 3, 4, 5})
+        self.assertEqual(self.emulator.commands, commands_before, "Overview must not poll hardware")
+        hidden = entities[0].entity_id
+        disabled = entities[1].entity_id
+        registry.async_update_entity(hidden, hidden_by=er.RegistryEntryHider.USER)
+        registry.async_update_entity(disabled, disabled_by=er.RegistryEntryDisabler.USER)
+        await overview(self.hass, connection, {"id": 899})
+        self.assertNotIn(hidden, {row["entity_id"] for row in connection.result})
+        self.assertNotIn(disabled, {row["entity_id"] for row in connection.result})
+        registry.async_update_entity(hidden, hidden_by=None)
+        registry.async_update_entity(disabled, disabled_by=None)
+        guest = Connection()
+        guest.user = SimpleNamespace(
+            is_admin=False,
+            permissions=SimpleNamespace(check_entity=lambda entity_id, _: entity_id == hidden),
+        )
+        await overview(self.hass, guest, {"id": 899})
+        self.assertEqual([row["entity_id"] for row in guest.result], [hidden])
+        await inspect.unwrap(panel.refresh_names_command)(self.hass, guest, {"id": 899})
+        self.assertEqual(guest.error[0], "unauthorized")
+
         handler = inspect.unwrap(panel.config_command)
         request = {
             "id": 900,
@@ -251,6 +285,30 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         saved_ids = {e.unique_id: e.entity_id for e in entities}
         registry.async_update_entity(target.entity_id, name="Moja nazwa HA")
         content = "ĄĆ"
+        from types import SimpleNamespace
+
+        from homeassistant.helpers import device_registry as dr
+
+        from custom_components.gryfsmart.system import system_entities
+
+        devices = dr.async_get(self.hass)
+        devices.async_update_device(target.device_id, name_by_user="Pokój HA")
+        self.assertEqual(await entry.runtime_data.refresh_names(), [])
+        await self.hass.async_block_till_done()
+        self.assertEqual(registry.async_get(target.entity_id).original_name, content)
+        self.assertEqual(devices.async_get(target.device_id).name, content)
+        self.assertEqual(devices.async_get(target.device_id).name_by_user, "Pokój HA")
+        rows = system_entities(
+            self.hass,
+            {entry.entry_id: (entry, entry.runtime_data)},
+            SimpleNamespace(permissions=SimpleNamespace(check_entity=lambda *args: True)),
+        )
+        row = next(row for row in rows if row["entity_id"] == target.entity_id)
+        self.assertEqual(row["name"], "Moja nazwa HA")
+        self.assertEqual(row["module"], "Pokój HA")
+        self.assertTrue(
+            any(row["section"] == "Temperatury" and row["name"] == content for row in rows)
+        )
         await self.hass.config_entries.async_reload(entry.entry_id)
         await self.hass.async_block_till_done()
         self.assertEqual(

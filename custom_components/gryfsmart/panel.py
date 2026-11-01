@@ -9,10 +9,10 @@ from pathlib import Path
 import voluptuous as vol
 from homeassistant.components import frontend, panel_custom, websocket_api
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from .const import VERSION
 from .protocol import ProtocolError
+from .system import system_entities
 
 KEY = "gryfsmart_config_panel"
 PATH = "gryfsmart-config"
@@ -27,6 +27,7 @@ async def register(hass, entry, hub):
             "registered": False,
             "visible": False,
             "lock": asyncio.Lock(),
+            "names_lock": asyncio.Lock(),
         },
     )
     async with state["lock"]:
@@ -39,13 +40,16 @@ async def register(hass, entry, hub):
                 ]
             )
             await hass.http.async_register_static_paths(
-                [StaticPathConfig("/gryfsmart-system", str(Path(__file__).parent / "frontend"), False)]
+                [
+                    StaticPathConfig(
+                        "/gryfsmart-system", str(Path(__file__).parent / "frontend"), False
+                    )
+                ]
             )
-            frontend.add_extra_js_url(
-                hass, f"/gryfsmart-system/system-card.js?v={VERSION}"
-            )
+            frontend.add_extra_js_url(hass, f"/gryfsmart-system/system-card.js?v={VERSION}")
             websocket_api.async_register_command(hass, config_command)
             websocket_api.async_register_command(hass, system_entities_command)
+            websocket_api.async_register_command(hass, refresh_names_command)
             state["registered"] = True
         state["entries"][entry.entry_id] = (entry, hub)
         if not state["visible"]:
@@ -164,29 +168,36 @@ async def config_command(hass, connection, message):
 @websocket_api.websocket_command({vol.Required("type"): "gryfsmart/system_entities"})
 @websocket_api.async_response
 async def system_entities_command(hass, connection, message):
-    """Return this integration's controllable entities, grouped by module."""
+    """Return registered channels without querying hardware on dashboard refresh."""
     state = hass.data.get(KEY)
     if not state:
         connection.send_error(message["id"], "not_ready", "Integracja nie jest gotowa")
         return
-    entities = er.async_get(hass)
-    devices = dr.async_get(hass)
-    result = []
-    for entry_id, (entry, _hub) in state["entries"].items():
-        for entity in entities.entities.values():
-            if (
-                entity.config_entry_id != entry_id
-                or entity.disabled_by is not None
-                or entity.domain not in {"switch", "cover", "number"}
-            ):
-                continue
-            device = devices.async_get(entity.device_id) if entity.device_id else None
-            result.append(
-                {
-                    "entry": entry_id,
-                    "module": device.name if device else entry.title,
-                    "entity_id": entity.entity_id,
-                }
-            )
-    result.sort(key=lambda item: (item["entry"], item["module"].casefold(), item["entity_id"]))
-    connection.send_result(message["id"], result)
+    connection.send_result(message["id"], system_entities(hass, state["entries"], connection.user))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "gryfsmart/refresh_names"})
+@websocket_api.async_response
+async def refresh_names_command(hass, connection, message):
+    """Explicit, serialized EEPROM reads; never write names or configuration."""
+    if not connection.user.is_admin:
+        connection.send_error(message["id"], "unauthorized", "Odczyt nazw wymaga administratora")
+        return
+    state = hass.data.get(KEY)
+    if not state or not state["entries"]:
+        connection.send_error(message["id"], "not_ready", "Integracja nie jest gotowa")
+        return
+    if state["names_lock"].locked():
+        connection.send_error(message["id"], "busy", "Odczyt nazw już trwa")
+        return
+    errors = []
+    try:
+        async with state["names_lock"], asyncio.timeout(120):
+            for entry, hub in list(state["entries"].values()):
+                if not hub.client.connected:
+                    errors.append(f"{entry.title}: brak połączenia")
+                    continue
+                errors.extend(await hub.refresh_names())
+        connection.send_result(message["id"], {"errors": errors})
+    except (OSError, TimeoutError, ProtocolError) as error:
+        connection.send_error(message["id"], "read_failed", f"Nie ukończono odczytu nazw: {error}")

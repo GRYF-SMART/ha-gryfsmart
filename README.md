@@ -126,8 +126,18 @@ W panelu konfiguracji reguł PWM są dwie osobne akcje:
 Nowa akcja wymaga firmware R0806T 31, R0808 31, ETH0606T 32, S0804 32 lub OLD 9 odpowiednio na celu, źródle reguły i drodze transmisji. OLD steruje PWM zdalnie, nie ma lokalnego PWM. Najpierw zaktualizuj moduły. Dotychczasowe akcje są zgodne ze starszym firmware.
 Po aktualizacji integracji przez HACS uruchom ponownie HA. Nie trzeba usuwać integracji ani ponownie dodawać urządzeń.
 
-## Karta wszystkich wyjść GRYFSMART (0.3.3)
+## Karta całej instalacji (0.3.4)
 
-Nowa opcjonalna karta Lovelace „GRYFSMART — cała instalacja” zbiera encje przekaźników, rolet i PWM ze wszystkich hubów oraz modułów tej integracji. Urządzenia i encje nadal pozostają osobno na swoich stronach HA. Dodaj kartę raz z selektora kart na widoku Przegląd; karta odświeża listę modułów i ich encji automatycznie. Urządzenia offline pozostają widoczne ze stanem niedostępności.
+Opcjonalna karta Lovelace „GRYFSMART — cała instalacja” zbiera wszystkie widoczne, włączone encje ze wszystkich hubów i modułów: wyjścia, rolety, PWM, wejścia, zdarzenia wejść, temperatury, termostaty, firmware i przyciski serwisowe. Urządzenia i encje nadal pozostają osobno na swoich stronach HA. Niedostępne moduły pozostają widoczne. Karta respektuje uprawnienia użytkownika oraz ukrycie/wyłączenie encji w HA.
 
-Aktualizuj integrację w HACS do 0.3.3 i uruchom ponownie Home Assistanta. Otwórz Przegląd → Edytuj pulpit → Dodaj kartę, wyszukaj „GRYFSMART — cała instalacja” i ją wybierz. Karta nie wymaga dodatkowej konfiguracji.
+Aktualizuj integrację w HACS do **0.3.4**, uruchom ponownie Home Assistanta i odśwież przeglądarkę (Ctrl+F5). Otwórz **Przegląd → Edytuj pulpit → + w sekcji → Według karty**, wyszukaj „GRYFSMART — cała instalacja”, wybierz ją i zapisz. Nie usuwaj integracji ani urządzeń. Karta działa także w widoku Panel (pojedyncza karta). Jeżeli chcesz, możesz użyć edytora YAML:
+
+```yaml
+type: custom:gryfsmart-system-card
+```
+
+Zasób JavaScript jest rejestrowany automatycznie przez integrację. Nie trzeba osobnego repozytorium karty w HACS. Wersja 0.3.4 poprawia błędny typ w selektorze i odrzucanie standardowej konfiguracji z 0.3.3. Dopuszcza ponowną edycję, zachowuje suwaki podczas zmian stanów i rozróżnia moduły o identycznych nazwach.
+
+Stany są aktualizowane przez HA na bieżąco, a lista modułów i etykiety odświeżają się co 30 s bez odpytywania sprzętu. „Odśwież listę” pobiera tę listę od razu. Administrator może kliknąć **„Odczytaj nazwy z modułów”**, aby odczytać aktualne etykiety z EEPROM bez restartowania HA. Nazwy są również odczytywane po uruchomieniu/przeładowaniu integracji i po ponownym połączeniu. Ręczne nazwy w HA mają pierwszeństwo; identyfikatory encji i automatyzacje pozostają zachowane. Częściowy odczyt pokazuje ostrzeżenie i zachowuje wcześniejsze nazwy.
+
+Nazwy zapisane wyłącznie w projekcie GRYFEXPERT na PC nie są dostępne dla HA. Najpierw użyj w GRYFEXPERT „Informacje → Wyślij nazwy do EEPROM”, potem odczytaj nazwy z karty. Firmware bez obsługi nazw udostępnia etykiety domyślne. Ta aktualizacja karty nie wymaga nowych HEX-ów.
