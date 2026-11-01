@@ -70,6 +70,20 @@ class RuleTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(protocol.ProtocolError):
             await self.client.read_rule(5, 1)
 
+    async def test_pwm_toggle_preset_roundtrip(self):
+        baseline = await self.client.read_rule(3, 1)
+        desired = copy.deepcopy(baseline)
+        desired["pwm"] = [5, 60, 10]
+        desired["slots"][0] = {"target": 6, "type": 4, "data": [5, 75, 20]}
+        await self.client.write_rule(3, 1, desired, baseline)
+        self.assertEqual(await self.client.read_rule(3, 1), desired)
+        self.assertEqual(self.peer.saved_rules[3, 1], desired)
+        for value in ([6, 50, 10], [5, 101, 0], [3, 50, 0]):
+            invalid = copy.deepcopy(desired)
+            invalid["pwm"] = value
+            with self.assertRaises(protocol.ProtocolError):
+                await self.client.write_rule(3, 1, invalid, desired)
+
     async def test_readback_failure_blocks_enable_and_save(self):
         baseline = await self.client.read_rule(3, 1)
         desired = copy.deepcopy(baseline)

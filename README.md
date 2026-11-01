@@ -116,3 +116,12 @@ Panel i jego API wymagają administratora HA. Odczyty są uwierzytelnione przez 
 Po uruchomieniu/przeładowaniu integracji i po ponownym połączeniu HA odczytuje nazwy z modułów przed utworzeniem encji. Nie trzeba logować się ponownie do interfejsu HA. Nazwy modułu, wejść, wyjść/rolet, regulatorów, czujników R0806T/R0808 oraz PWM są odczytywane przez NameGet. Wymagane firmware ETH/R0808/R0806T 29, S0804 30, OLD 6. Czujniki ETH zachowują dotychczasowe etykiety — firmware ETH nie udostępnia dla nich pól nazw EEPROM.
 Starszy firmware, puste nazwy lub błąd odczytu zachowują nazwy domyślne/ostatnie; problem nazwy nie blokuje sterowania. Nazwy użytkownika ustawione w rejestrze encji/urządzeń HA mają pierwszeństwo. Identyfikatory unique_id nie zmieniają się. Integracja wyłącznie odczytuje nazwy: nie wysyła NameSet ani SaveConfig. Nazwy nadaj w GRYFEXPERT 0.5.20 → Informacje → Nazwy zapisane w module. Po zmianie nazw przeładuj integrację HA.
 Aktualizacja: HACS → GRYFSMART → pobierz 0.3.1, następnie uruchom ponownie cały Home Assistant.
+
+## PWM: przełączanie na zadaną wartość (0.3.2)
+
+W panelu konfiguracji reguł PWM są dwie osobne akcje:
+- „Przełącz — pamięta ostatni poziom” zachowuje dotychczasowe działanie.
+- „Przełącz — 0% ↔ wartość zadana” pozwala ustawić procent i rampę w regule lokalnej lub slocie zdalnym.
+
+Nowa akcja wymaga firmware R0806T 31, R0808 31, ETH0606T 32, S0804 32 lub OLD 9 odpowiednio na celu, źródle reguły i drodze transmisji. OLD steruje PWM zdalnie, nie ma lokalnego PWM. Najpierw zaktualizuj moduły. Dotychczasowe akcje są zgodne ze starszym firmware.
+Po aktualizacji integracji przez HACS uruchom ponownie HA. Nie trzeba usuwać integracji ani ponownie dodawać urządzeń.

@@ -45,7 +45,7 @@ def validate(module, number, rule, modules):
     if module.pwm:
         vector(r["pwm"], 3, 0, 100)
         a, percent, ramp = r["pwm"]
-        if a > 4 or ramp > 50 or (a != 4 and percent):
+        if a > 5 or ramp > 50 or (a < 4 and percent):
             raise ProtocolError("Nieprawidłowa akcja PWM lub rampa")
     elif r["pwm"] is not None:
         raise ProtocolError("Moduł nie ma lokalnego PWM")
@@ -89,10 +89,10 @@ def validate(module, number, rule, modules):
                 raise ProtocolError("Nieprawidłowe sterowanie przekaźnikami")
         elif kind == 4:
             if (
-                data[0] > 4
+                data[0] > 5
                 or data[1] > 100
                 or data[2] > 50
-                or (data[0] != 4 and data[1])
+                or (data[0] < 4 and data[1])
                 or (peer and not peer.pwm)
             ):
                 raise ProtocolError("Nieprawidłowe sterowanie PWM")
