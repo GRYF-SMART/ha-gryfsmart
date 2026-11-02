@@ -19,11 +19,13 @@ class GryfSmartSystemCard extends HTMLElement {
       [hidden]{display:none!important}
     </style>
     <div class="toolbar"><h2></h2><button class="names" hidden>Odczytaj nazwy z modułów</button>
-      <button class="refresh" aria-label="Odśwież listę modułów i encji">Odśwież listę</button></div>
+      <button class="refresh" aria-label="Odśwież listę modułów i encji">Odśwież listę</button>
+      <button class="tiles" hidden>Dodaj osobne kafelki</button></div>
     <div class="status" role="status" aria-live="polite">Pobieranie instalacji GRYFSMART…</div>
     <div class="notice" role="status" aria-live="polite" hidden></div><div class="wrap"></div>`;
     this.shadowRoot.querySelector(".refresh").addEventListener("click", () => this.refresh());
     this.shadowRoot.querySelector(".names").addEventListener("click", () => this.refreshNames());
+    this.shadowRoot.querySelector(".tiles").addEventListener("click", () => this.openTiles());
   }
 
   static getStubConfig() { return {}; }
@@ -52,6 +54,7 @@ class GryfSmartSystemCard extends HTMLElement {
     const first = !this._hass;
     this._hass = value;
     this.shadowRoot.querySelector(".names").hidden = !value?.user?.is_admin;
+    this.shadowRoot.querySelector(".tiles").hidden = !value?.user?.is_admin;
     // Preserve controls on state updates, including the PWM slider being dragged.
     for (const card of this._cards.values()) card.hass = value;
     if (first) this.refresh();
@@ -121,6 +124,26 @@ class GryfSmartSystemCard extends HTMLElement {
       notice.className = "notice error";
       notice.textContent = `Nie ukończono odczytu nazw: ${error.message || "brak odpowiedzi HA"}`;
     } finally { this._readingNames = false; button.disabled = false; }
+  }
+
+  async openTiles() {
+    if (!this._hass?.user?.is_admin || this._openingTiles) return;
+    this._openingTiles = true;
+    const button = this.shadowRoot.querySelector(".tiles");
+    button.disabled = true;
+    try {
+      const [items] = await this.bounded(Promise.all([
+        this._hass.callWS({ type: "gryfsmart/system_entities" }),
+        customElements.get("gryfsmart-tiles-dialog") ? Promise.resolve() :
+          import("/gryfsmart-system/dashboard-tiles.js?v=0.3.5"),
+      ]));
+      if (!Array.isArray(items) || !items.length) throw new Error("Brak widocznych encji do dodania.");
+      if (document.querySelector("gryfsmart-tiles-dialog")) return;
+      const dialog = document.createElement("gryfsmart-tiles-dialog");
+      document.body.append(dialog);
+      await dialog.configure(this._hass, items);
+    } catch (error) { this.status(`Nie można przygotować kafelków. ${error.message || error}`, "error"); }
+    finally { this._openingTiles = false; button.disabled = false; }
   }
 
   render() {

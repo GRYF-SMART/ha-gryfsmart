@@ -141,3 +141,15 @@ Zasób JavaScript jest rejestrowany automatycznie przez integrację. Nie trzeba 
 Stany są aktualizowane przez HA na bieżąco, a lista modułów i etykiety odświeżają się co 30 s bez odpytywania sprzętu. „Odśwież listę” pobiera tę listę od razu. Administrator może kliknąć **„Odczytaj nazwy z modułów”**, aby odczytać aktualne etykiety z EEPROM bez restartowania HA. Nazwy są również odczytywane po uruchomieniu/przeładowaniu integracji i po ponownym połączeniu. Ręczne nazwy w HA mają pierwszeństwo; identyfikatory encji i automatyzacje pozostają zachowane. Częściowy odczyt pokazuje ostrzeżenie i zachowuje wcześniejsze nazwy.
 
 Nazwy zapisane wyłącznie w projekcie GRYFEXPERT na PC nie są dostępne dla HA. Najpierw użyj w GRYFEXPERT „Informacje → Wyślij nazwy do EEPROM”, potem odczytaj nazwy z karty. Firmware bez obsługi nazw udostępnia etykiety domyślne. Ta aktualizacja karty nie wymaga nowych HEX-ów.
+
+## Osobne kafelki na panelu (0.3.5)
+
+Administrator może kliknąć **„Dodaj osobne kafelki”** na karcie GRYFSMART. Wybierz panel i istniejącą zakładkę z układem **Sekcje** lub nową zakładkę „GRYFSMART — kafelki”. Podgląd pokazuje liczbę kafelków w każdym module. Dopiero **„Dodaj kafelki”** zapisuje układ. Najpierw zakończ zwykłą edycję panelu przyciskiem „Gotowe”.
+
+Każde wyjście, wejście, PWM, czujnik temperatury, termostat, roleta, zdarzenie i encja serwisowa otrzymuje niezależną, standardową kartę `tile` HA. Jeden moduł tworzy jedną sekcję; kafelki można swobodnie przesuwać i edytować w HA. PWM ma suwak, przekaźniki przełącznik, rolety przyciski ruchu, a termostaty regulację temperatury. Przyciski serwisowe otwierają szczegóły encji, zamiast wykonywać operację po przypadkowym kliknięciu ikony.
+
+Istniejący układ i karta zbiorcza pozostają zachowane. Encje już wyświetlane w docelowej zakładce są pomijane. Kolejne uruchomienie może dodać nowe encje, ale nie synchronizuje automatycznie rozmieszczenia kart. Nazwy kafelków nie są utrwalane w konfiguracji — po odczytaniu nazw z modułów korzystają z bieżących nazw HA, z pierwszeństwem ręcznych nazw użytkownika. Nagłówki sekcji otrzymują nazwy modułów z momentu dodania i można je edytować.
+
+Generator korzysta ze standardowych [kafelków HA](https://www.home-assistant.io/dashboards/tile/) i [sekcji](https://www.home-assistant.io/dashboards/sections/). Obsługuje panele edytowane w interfejsie, z własną konfiguracją, bez automatycznych strategii. Bezpośrednio przed zapisem sprawdza, czy układ nie zmienił się od podglądu; po zapisie odczytuje go kontrolnie. HA nie oferuje atomowej blokady edycji z innych kart przeglądarki, więc na czas dodawania zakończ równoległą edycję tego panelu. Przy utracie potwierdzenia przycisk „Sprawdź stan panelu” wykonuje tylko odczyt; zapis nie jest ponawiany automatycznie.
+
+Aktualizacja: HACS → GRYFSMART **0.3.5**, restart HA, Ctrl+F5. Jeśli kartę dodano ręcznie w zasobach, zaktualizuj jej adres do `/gryfsmart-system/system-card.js?v=0.3.5` (typ: Moduł JavaScript). Ta funkcja nie wymaga aktualizacji firmware ani GRYFEXPERT.
