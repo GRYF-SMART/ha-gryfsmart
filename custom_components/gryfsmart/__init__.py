@@ -5,17 +5,31 @@ import logging
 import time
 from contextlib import suppress
 
+import voluptuous as vol
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import service
 from homeassistant.helpers.storage import Store
 
 from .client import GryfClient
-from .const import PLATFORMS
+from .const import DOMAIN, PLATFORMS
 from .panel import register, unregister
 from .project_names import apply_labels
 from .protocol import ProtocolError
 from .system import sync_names
 
 _LOGGER = logging.getLogger(__name__)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass, config):
+    if hasattr(service, "async_register_platform_entity_service"):
+        service.async_register_platform_entity_service(
+            hass, DOMAIN, "pulse", entity_domain="switch",
+            schema={vol.Required("duration"): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=60))},
+            func="async_pulse",
+        )
+    return True
 
 
 class GryfHub:

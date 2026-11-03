@@ -1,11 +1,19 @@
 """Relay outputs."""
 
+import voluptuous as vol
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.helpers import entity_platform, service
 
 from .entity import GryfEntity
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
+    if not hasattr(service, "async_register_platform_entity_service"):
+        entity_platform.async_get_current_platform().async_register_entity_service(
+            "pulse",
+            {vol.Required("duration"): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=60))},
+            "async_pulse",
+        )
     hub = entry.runtime_data
     async_add_entities(
         GryfRelay(hub, module, channel)
@@ -32,3 +40,6 @@ class GryfRelay(GryfEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs):
         await self.operation(self.hub.client.relay(self.module.id, self.channel, False))
+
+    async def async_pulse(self, duration):
+        await self.operation(self.hub.client.pulse(self.module.id, self.channel, duration))

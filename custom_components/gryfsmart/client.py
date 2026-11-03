@@ -5,6 +5,7 @@ import logging
 import re
 from contextlib import suppress
 from dataclasses import replace
+from decimal import Decimal, InvalidOperation
 
 from . import names as eeprom_names
 from .const import BAUDRATE, DEFAULT_PORT, TIMEOUT
@@ -392,6 +393,22 @@ class GryfClient:
                 mutation=True,
             )
             await self.read_pwm(address)
+
+    async def pulse(self, address, channel, duration):
+        module = self.modules[address]
+        try:
+            ticks = Decimal(str(duration)) * 10
+            valid = ticks.is_finite() and 1 <= ticks <= 600 and ticks == ticks.to_integral_value()
+        except InvalidOperation:
+            valid = False
+        if not valid or not 1 <= channel <= module.outputs:
+            raise ProtocolError("Impuls wymaga wyjścia przekaźnikowego i czasu 0,1-60 s co 0,1 s")
+        async with self.control_lock:
+            # Firmware owns the timer. Never retry a mutation or emulate OFF in HA.
+            await self.request(
+                f"AT+Pulse={address},{channel},{int(ticks)},0",
+                lambda line: line == f"RuleOK={address}", mutation=True,
+            )
 
     async def relay(self, address, channel, enabled):
         module = self.modules[address]

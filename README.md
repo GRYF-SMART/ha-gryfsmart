@@ -168,3 +168,42 @@ W standardowych kartach i automatyzacjach użyj `climate.set_preset_mode` z `pre
 **GRYFSMART — Konfiguracja → Nazwy z projektu i nazwy regulatorów**: wybierz instalację i plik `.gryf.json`, potem **Importuj nazwy z projektu**. Import sprawdza ID i model, zapisuje tylko nazwy w HA, nie steruje sprzętem. Można też zmienić nazwę pojedynczego regulatora. Nazwy przetrwają restart i mają pierwszeństwo przed EEPROM. Ręczne nazwy w ustawieniach encji HA pozostają nadrzędne. Identyfikatory encji i automatyzacje nie zmieniają się.
 
 Aktualizacja: HACS → GRYFSMART 0.3.7 → restart HA → Ctrl+F5. Karta regulatora rejestruje się automatycznie. Ręczny wpis zasobu: `/gryfsmart-system/thermostat-card.js?v=0.3.7`, typ Moduł JavaScript.
+
+## 0.3.8 — karty Drzwi i Brama
+
+Po aktualizacji integracji zrestartuj Home Assistant i odśwież przeglądarkę.
+W panelu wybierz Dodaj kartę → GRYFSMART — Drzwi lub GRYFSMART — Brama.
+Karty rejestrują się automatycznie. Gdy przeglądarka nie wczyta zasobu,
+dodaj jako moduł JavaScript `/gryfsmart-system/door-card.js?v=0.3.8`
+lub `/gryfsmart-system/gate-card.js?v=0.3.8` w zasobach panelu.
+
+Drzwi: wybierz osobno moduł/wyjście elektrozaczepu oraz moduł/wejście
+kontaktronu. ON wyjścia oznacza zamkniętą kłódkę, OFF otwartą.
+Dla kontaktronu wybierz, czy drzwi zamknięte oznaczają wejście zwarte (ON)
+czy rozwarte (OFF). Stany niedostępne są pokazywane jako nieznane.
+
+```yaml
+type: custom:gryfsmart-door-card
+title: Drzwi
+output_entity: switch.twoje_wyjscie
+contact_entity: binary_sensor.twoje_wejscie
+closed_state: "on"
+```
+
+Brama: wybierz moduł i wyjście przekaźnikowe oraz czas impulsu 0,1–60 s,
+z krokiem 0,1 s. Wyjście jest zamykane na ten czas, po czym moduł je otwiera.
+Wykorzystywana jest akcja `gryfsmart.pulse` i sprzętowa komenda `AT+Pulse`.
+Impuls nie jest ponawiany po utracie potwierdzenia. Przeglądarka i HA nie
+odmierzają czasu wyłączenia przekaźnika. Przycisk jest blokowany podczas
+wysyłki, impulsu i gdy wyjście jest aktywne lub niedostępne. Położenie
+bramy nie jest wywnioskowywane ze stanu przekaźnika.
+Wymagany firmware obsługujący AT+Pulse (aktualne wsady GRYFSMART).
+
+```yaml
+type: custom:gryfsmart-gate-card
+title: Brama wjazdowa
+output_entity: switch.twoje_wyjscie
+duration: 0.5
+```
+
+Zastąp przykładowe identyfikatory rzeczywistymi encjami albo użyj edytora wizualnego.

@@ -49,6 +49,8 @@ async def register(hass, entry, hub):
             )
             frontend.add_extra_js_url(hass, f"/gryfsmart-system/system-card.js?v={VERSION}")
             frontend.add_extra_js_url(hass, f"/gryfsmart-system/thermostat-card.js?v={VERSION}")
+            frontend.add_extra_js_url(hass, f"/gryfsmart-system/door-card.js?v={VERSION}")
+            frontend.add_extra_js_url(hass, f"/gryfsmart-system/gate-card.js?v={VERSION}")
             websocket_api.async_register_command(hass, config_command)
             websocket_api.async_register_command(hass, system_entities_command)
             websocket_api.async_register_command(hass, refresh_names_command)
