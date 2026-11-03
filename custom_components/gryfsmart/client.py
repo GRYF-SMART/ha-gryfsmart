@@ -430,6 +430,14 @@ class GryfClient:
     async def thermostat(self, address, channel, **changes):
         if not self.modules[address].thermostats or channel not in (1, 2):
             raise ProtocolError("Invalid thermostat channel")
+        if changes.get("mode") == 2:
+            target = self.modules[address]
+            if not target.forced_thermostat_on:
+                raise ProtocolError("Tryb ON wymaga firmware 32 lub nowszego w regulatorze")
+            if any(m.thermostats and not m.forced_thermostat_on
+                   and (not target.position or not m.position or m.position < target.position)
+                   for m in self.modules.values()):
+                raise ProtocolError("Zaktualizuj R0806T/R0808 po drodze do regulatora do firmware 32")
         async with self.control_lock:
             # Read before every write; preserve source, hysteresis and outputs.
             cfg = await self.read_thermostat_config(address, channel)

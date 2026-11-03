@@ -11,6 +11,7 @@ from homeassistant.components import frontend, panel_custom, websocket_api
 from homeassistant.components.http import StaticPathConfig
 
 from .const import VERSION
+from .project_names import name_value, project_labels
 from .protocol import ProtocolError
 from .system import system_entities
 
@@ -47,9 +48,11 @@ async def register(hass, entry, hub):
                 ]
             )
             frontend.add_extra_js_url(hass, f"/gryfsmart-system/system-card.js?v={VERSION}")
+            frontend.add_extra_js_url(hass, f"/gryfsmart-system/thermostat-card.js?v={VERSION}")
             websocket_api.async_register_command(hass, config_command)
             websocket_api.async_register_command(hass, system_entities_command)
             websocket_api.async_register_command(hass, refresh_names_command)
+            websocket_api.async_register_command(hass, names_command)
             state["registered"] = True
         state["entries"][entry.entry_id] = (entry, hub)
         if not state["visible"]:
@@ -201,3 +204,46 @@ async def refresh_names_command(hass, connection, message):
         connection.send_result(message["id"], {"errors": errors})
     except (OSError, TimeoutError, ProtocolError) as error:
         connection.send_error(message["id"], "read_failed", f"Nie ukończono odczytu nazw: {error}")
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "gryfsmart/names",
+    vol.Required("action"): vol.In(["list", "import", "rename"]),
+    vol.Optional("entry"): str,
+    vol.Optional("project"): dict,
+    vol.Optional("module"): vol.All(int, vol.Range(min=1, max=35)),
+    vol.Optional("channel"): vol.In([1, 2]),
+    vol.Optional("name"): str,
+})
+@websocket_api.async_response
+async def names_command(hass, connection, message):
+    if not connection.user.is_admin:
+        connection.send_error(message["id"], "unauthorized", "Zmiana nazw wymaga administratora")
+        return
+    state = hass.data.get(KEY)
+    if not state or not state["entries"]:
+        connection.send_error(message["id"], "not_ready", "Integracja nie jest gotowa")
+        return
+    try:
+        action = message["action"]
+        if action == "list":
+            result = [{"entry": entry_id, "title": entry.title, "modules": [
+                {"id": m.id, "model": m.model, "names": m.names, "thermostats": m.thermostats}
+                for m in hub.client.modules.values()]
+            } for entry_id, (entry, hub) in state["entries"].items()]
+        else:
+            _, hub = state["entries"][message["entry"]]
+            if action == "import":
+                updates = project_labels(message["project"], hub.client.modules)
+            else:
+                module = hub.client.modules[message["module"]]
+                if not module.thermostats:
+                    raise ProtocolError("Moduł nie ma regulatorów")
+                updates = {str(module.id): {"model": module.model, "names": {
+                    f"thermostat_{message['channel']}": name_value(message["name"])
+                }}}
+            await hub.save_names(updates)
+            result = {"count": sum(len(record["names"]) for record in updates.values())}
+        connection.send_result(message["id"], result)
+    except (KeyError, ValueError, TypeError, ProtocolError, OSError) as error:
+        connection.send_error(message["id"], "names_error", str(error))

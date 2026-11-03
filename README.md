@@ -140,7 +140,7 @@ Zasób JavaScript jest rejestrowany automatycznie przez integrację. Nie trzeba 
 
 Stany są aktualizowane przez HA na bieżąco, a lista modułów i etykiety odświeżają się co 30 s bez odpytywania sprzętu. „Odśwież listę” pobiera tę listę od razu. Administrator może kliknąć **„Odczytaj nazwy z modułów”**, aby odczytać aktualne etykiety z EEPROM bez restartowania HA. Nazwy są również odczytywane po uruchomieniu/przeładowaniu integracji i po ponownym połączeniu. Ręczne nazwy w HA mają pierwszeństwo; identyfikatory encji i automatyzacje pozostają zachowane. Częściowy odczyt pokazuje ostrzeżenie i zachowuje wcześniejsze nazwy.
 
-Nazwy zapisane wyłącznie w projekcie GRYFEXPERT na PC nie są dostępne dla HA. Najpierw użyj w GRYFEXPERT „Informacje → Wyślij nazwy do EEPROM”, potem odczytaj nazwy z karty. Firmware bez obsługi nazw udostępnia etykiety domyślne. Ta aktualizacja karty nie wymaga nowych HEX-ów.
+Od 0.3.7 nazwy z projektu można importować w panelu „GRYFSMART — Konfiguracja”. Można również zapisać nazwy w EEPROM z zakładek Wejścia, Wyjścia i Termostaty w GRYFEXPERT 0.5.33, a potem odczytać je z karty. Firmware bez obsługi nazw udostępnia etykiety domyślne. Ta aktualizacja karty nie wymaga nowych HEX-ów.
 
 ## Osobne kafelki na panelu (0.3.5)
 
@@ -153,3 +153,18 @@ Istniejący układ i karta zbiorcza pozostają zachowane. Encje już wyświetlan
 Generator korzysta ze standardowych [kafelków HA](https://www.home-assistant.io/dashboards/tile/) i [sekcji](https://www.home-assistant.io/dashboards/sections/). Obsługuje panele edytowane w interfejsie, z własną konfiguracją, bez automatycznych strategii. Bezpośrednio przed zapisem sprawdza, czy układ nie zmienił się od podglądu; po zapisie odczytuje go kontrolnie. HA nie oferuje atomowej blokady edycji z innych kart przeglądarki, więc na czas dodawania zakończ równoległą edycję tego panelu. Przy utracie potwierdzenia przycisk „Sprawdź stan panelu” wykonuje tylko odczyt; zapis nie jest ponawiany automatycznie.
 
 Aktualizacja: HACS → GRYFSMART **0.3.5**, restart HA, Ctrl+F5. Jeśli kartę dodano ręcznie w zasobach, zaktualizuj jej adres do `/gryfsmart-system/system-card.js?v=0.3.5` (typ: Moduł JavaScript). Ta funkcja nie wymaga aktualizacji firmware ani GRYFEXPERT.
+
+## Regulator temperatury i nazwy (0.3.7)
+
+Karta **Regulator temperatury** (`type: custom:gryfsmart-thermostat-card`) pozwala wybrać encję `climate` regulatora. Korzysta z aktualnej nazwy encji; własny tytuł można podać w edytorze. Kolory: śliwkowy, fioletowy i różowy. Wskaźnik pokazuje raportowany stan wyjść regulatora.
+
+- **OFF**: wyłącza przypisane wyjścia.
+- **ON**: wymusza załączenie niezależnie od temperatury i czujnika; wymaga firmware 32 R0806T/R0808, także w modułach przekazujących komendę.
+- **AUTO**: regulacja według temperatury i histerezy (grzanie lub chłodzenie).
+- **ECO**: zmiana temperatury zadanej i przejście do AUTO. Powrót do AUTO z karty odtwarza temperaturę komfortową zapamiętaną w tej przeglądarce.
+
+W standardowych kartach i automatyzacjach użyj `climate.set_preset_mode` z `preset_mode: off`, `on` lub `auto`. `climate.turn_on` oznacza teraz wymuszone ON; do regulacji używaj preset `auto` albo dotychczasowych trybów HVAC `heat`/`cool`. Na starszym firmware ON jest niedostępne, AUTO i OFF działają. Nastawy HA działają w RAM; przycisk zapisu konfiguracji modułu utrwala je w EEPROM.
+
+**GRYFSMART — Konfiguracja → Nazwy z projektu i nazwy regulatorów**: wybierz instalację i plik `.gryf.json`, potem **Importuj nazwy z projektu**. Import sprawdza ID i model, zapisuje tylko nazwy w HA, nie steruje sprzętem. Można też zmienić nazwę pojedynczego regulatora. Nazwy przetrwają restart i mają pierwszeństwo przed EEPROM. Ręczne nazwy w ustawieniach encji HA pozostają nadrzędne. Identyfikatory encji i automatyzacje nie zmieniają się.
+
+Aktualizacja: HACS → GRYFSMART 0.3.7 → restart HA → Ctrl+F5. Karta regulatora rejestruje się automatycznie. Ręczny wpis zasobu: `/gryfsmart-system/thermostat-card.js?v=0.3.7`, typ Moduł JavaScript.

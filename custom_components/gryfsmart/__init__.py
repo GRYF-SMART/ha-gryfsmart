@@ -6,10 +6,12 @@ import time
 from contextlib import suppress
 
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.storage import Store
 
 from .client import GryfClient
 from .const import PLATFORMS
 from .panel import register, unregister
+from .project_names import apply_labels
 from .protocol import ProtocolError
 from .system import sync_names
 
@@ -23,6 +25,8 @@ class GryfHub:
         self.client = GryfClient(dict(entry.data) | dict(entry.options), self.changed, self.event)
         self.task = None
         self.names_lock = asyncio.Lock()
+        self.name_store = Store(hass, 1, f"gryfsmart_names_{entry.entry_id}")
+        self.saved_names = {}
 
     def changed(self):
         for listener in tuple(self.listeners):
@@ -42,6 +46,7 @@ class GryfHub:
         return lambda: listeners.discard(listener)
 
     async def start(self):
+        self.saved_names = await self.name_store.async_load() or {}
         await self.client.connect()
         await self.client.discover()
         await self.refresh_names()
@@ -50,9 +55,25 @@ class GryfHub:
     async def refresh_names(self):
         async with self.names_lock:
             errors = await self.client.read_names()
+            apply_labels(self.client.modules, self.saved_names)
             sync_names(self.hass, self.entry, self)
             self.changed()
             return errors
+
+    async def save_names(self, updates):
+        async with self.names_lock:
+            merged = {key: {"model": value["model"], "names": dict(value["names"])}
+                      for key, value in self.saved_names.items()}
+            for address, record in updates.items():
+                old = merged.get(address, {})
+                names = dict(old.get("names", {})) if old.get("model") == record["model"] else {}
+                names.update(record["names"])
+                merged[address] = {"model": record["model"], "names": names}
+            await self.name_store.async_save(merged)
+            self.saved_names = merged
+            apply_labels(self.client.modules, merged)
+            sync_names(self.hass, self.entry, self)
+            self.changed()
 
     async def run(self):
         """Poll independently of push traffic; refresh moving covers every second."""

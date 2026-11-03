@@ -194,6 +194,26 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.hass.states.get(climate).state, "heat")
         self.assertEqual(self.emulator.configs[3, 1].setpoint, 235)
         self.assertEqual(self.emulator.configs[3, 1].outputs, ((0, 2, 1),))
+        self.assertEqual(self.hass.states.get(climate).attributes["preset_mode"], "auto")
+        for module in entry.runtime_data.client.modules.values():
+            if module.thermostats:
+                module.firmware = "32"
+        for mode, expected in [("on", 2), ("off", 0), ("auto", 1)]:
+            await self.hass.services.async_call("climate", "set_preset_mode",
+                {"entity_id": climate, "preset_mode": mode}, blocking=True)
+            self.assertEqual(self.emulator.configs[3, 1].mode, expected)
+            self.assertEqual(self.hass.states.get(climate).attributes["regulator_mode"], mode)
+        rename = inspect.unwrap(panel.names_command)
+        connection.error = None
+        before_names = list(self.emulator.commands)
+        await rename(self.hass, connection, {"id": 901, "action": "rename", "entry": entry.entry_id,
+                                            "module": 3, "channel": 1, "name": "Podłoga"})
+        self.assertIsNone(connection.error)
+        self.assertEqual(registry.async_get(climate).original_name, "Podłoga")
+        self.assertEqual((await entry.runtime_data.name_store.async_load())["3"]["names"]["thermostat_1"], "Podłoga")
+        self.assertEqual(self.emulator.commands, before_names)
+        await rename(self.hass, guest, {"id": 902, "action": "list"})
+        self.assertEqual(guest.error[0], "unauthorized")
         pwm = entity_id("_R0806T_3_pwm")
         self.assertEqual(self.hass.states.get(pwm).state, "0")
         await self.hass.services.async_call(

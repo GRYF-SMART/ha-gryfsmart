@@ -58,6 +58,10 @@ class Module:
         return 2 if self.model in ("R0808", "R0806T") else 0
 
     @property
+    def forced_thermostat_on(self):
+        return bool(self.thermostats and int(self.firmware) >= 32)
+
+    @property
     def pwm(self):
         return self.model == "R0806T"
 
@@ -123,7 +127,7 @@ class ThermostatConfig:
 
     def validate(self):
         if (
-            self.mode not in (0, 1)
+            self.mode not in (0, 1, 2)
             or self.cooling not in (0, 1)
             or not 0 <= self.source <= 35
             or self.sensor not in (1, 2)
@@ -300,7 +304,8 @@ class StateStore:
                 not module.thermostats
                 or len(values) != 9
                 or values[1] not in (1, 2)
-                or any(values[i] not in (0, 1) for i in (2, 3, 4, 8))
+                or values[2] not in (0, 1, 2)
+                or any(values[i] not in (0, 1) for i in (3, 4, 8))
                 or not -550 <= values[5] <= 1250
                 or not -550 <= values[6] <= 1250
                 or not 1 <= values[7] <= 200

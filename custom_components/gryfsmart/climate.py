@@ -34,6 +34,7 @@ class GryfThermostat(GryfEntity, ClimateEntity):
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.TURN_ON
         | ClimateEntityFeature.TURN_OFF
+        | ClimateEntityFeature.PRESET_MODE
     )
 
     def __init__(self, hub, module, channel):
@@ -78,13 +79,28 @@ class GryfThermostat(GryfEntity, ClimateEntity):
             return None
         if not self._status[0]:
             return HVACAction.OFF
-        if not self._status[2]:
+        if self._status[0] != 2 and not self._status[2]:
             # Firmware can hold an output on without a fresh measurement.
             # Do not claim IDLE while it still reports an active output.
             return None
         if not self._status[6]:
             return HVACAction.IDLE
         return HVACAction.COOLING if self._status[1] else HVACAction.HEATING
+
+    @property
+    def preset_modes(self):
+        return ["off", "on", "auto"] if self.module.forced_thermostat_on else ["off", "auto"]
+
+    @property
+    def preset_mode(self):
+        return {0: "off", 1: "auto", 2: "on"}.get(self._status[0]) if self._status else None
+
+    async def async_set_preset_mode(self, preset_mode):
+        if preset_mode not in self.preset_modes:
+            raise ValueError("Tryb ON wymaga firmware 32 lub nowszego")
+        await self.operation(self.hub.client.thermostat(
+            self.module.id, self.channel, mode={"off": 0, "auto": 1, "on": 2}[preset_mode]
+        ))
 
     @property
     def extra_state_attributes(self):
@@ -97,6 +113,9 @@ class GryfThermostat(GryfEntity, ClimateEntity):
             "hysteresis": cfg.hysteresis / 10,
             "outputs": list(cfg.outputs),
             "configured": bool(cfg.outputs),
+            "outputs_active": bool(self._status[6]) if self._status else None,
+            "regulator_mode": self.preset_mode,
+            "forced_on_supported": self.module.forced_thermostat_on,
             "persistence": "RAM; use Save configuration button for EEPROM",
         }
 
@@ -121,5 +140,5 @@ class GryfThermostat(GryfEntity, ClimateEntity):
         await self.async_set_hvac_mode(HVACMode.OFF)
 
     async def async_turn_on(self):
-        cfg = self.module_state.configs.get(self.channel)
-        await self.async_set_hvac_mode(HVACMode.COOL if cfg and cfg.cooling else HVACMode.HEAT)
+        # ON is an explicit override, never silently substitute AUTO on old firmware.
+        await self.async_set_preset_mode("on")
