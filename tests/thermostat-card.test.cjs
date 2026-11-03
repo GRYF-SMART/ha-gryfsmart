@@ -55,6 +55,8 @@ test('thermostat ON/OFF/AUTO, ECO, names and card editor', async () => {
     assert.equal(await page.evaluate(()=>requests.find(m=>m.action==='rename').name),'Grzejnik');
     await page.locator('input[type=file]').setInputFiles({name:'dom.gryf.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({devices:[{id:2,model:'R0806T',regulatorNames:['A','B'],configuration:{rules:[{enabled:true}]}}]}))});
     await page.getByRole('button',{name:'Importuj nazwy z projektu'}).click();
+    await page.waitForFunction(()=>requests.some(m=>m.action==='import'));
+    await page.getByRole('status').filter({hasText:'Zaimportowano 3 nazw do HA.'}).waitFor();
     const imported=await page.evaluate(()=>requests.find(m=>m.action==='import'));
     assert(!Object.hasOwn(imported.project.devices[0],'configuration'));
     assert.deepEqual(imported.project.devices[0].regulatornames,['A','B']);
