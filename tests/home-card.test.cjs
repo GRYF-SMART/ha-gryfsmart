@@ -13,7 +13,7 @@ test('home rooms: actual states, grouped actions, door, partial/unknown covers a
    window.hass={states:{},callWS:async()=>rows,callService:async(...args)=>calls.push(args)};
    for(const row of rows)hass.states[row.entity_id]={state:'off',attributes:{}};
    Object.assign(hass.states,{'switch.lamp':{state:'on',attributes:{}},'number.pwm':{state:'45',attributes:{}},'cover.window':{state:'open',attributes:{current_position:100}},'cover.partial':{state:'open',attributes:{current_position:35}},'cover.closed':{state:'closed',attributes:{current_position:0}},'cover.unknown':{state:'unavailable',attributes:{}},'binary_sensor.contact':{state:'on',attributes:{}},'climate.heat':{state:'heat',attributes:{current_temperature:22}}});
-   window.card=document.createElement('gryfsmart-home-card');card.setConfig({door_output:'switch.lock',door_contact:'binary_sensor.contact'});card.hass=hass;document.querySelector('main').append(card);
+   window.card=document.createElement('gryfsmart-home-card');card.setConfig({layout:'tabs',door_output:'switch.lock',door_contact:'binary_sensor.contact'});card.hass=hass;document.querySelector('main').append(card);
   });
   await page.getByRole('tab',{name:'🛋️ Salon'}).waitFor();assert.equal(await page.getByRole('tab').count(),2);assert.match(await page.locator('.summary').innerText(),/Włączone obwody: 2/);assert.match(await page.locator('.summary').innerText(),/Otwarte rolety: 1/);assert.match(await page.locator('.summary').innerText(),/Zamknięte rolety: 1/);assert.match(await page.locator('.summary').innerText(),/Częściowo \/ w ruchu: 1/);assert.match(await page.locator('.summary').innerText(),/Brak danych: 1/);
   assert.equal(await page.getByText('Brak grupy',{exact:true}).count(),0);assert.match(await page.locator('.contact').innerText(),/zamknięte/);
@@ -25,6 +25,13 @@ test('home rooms: actual states, grouped actions, door, partial/unknown covers a
   await page.getByRole('tab',{name:'🚪 Hol'}).click();assert.equal(await page.getByRole('button',{name:'Zamknij rolety w pomieszczeniu',exact:true}).count(),0);assert.equal(await page.locator('.item').count(),1);
   await page.evaluate(()=>{hass.states['switch.hall'].state='unavailable';card.hass=hass;});assert.ok(await page.getByRole('button',{name:'Hol lampa — 💡 Przełącz'}).isDisabled());
   await page.getByRole('tab',{name:'🛋️ Salon'}).click();await page.evaluate(()=>{hass.callService=async()=>{throw Error('Brak potwierdzenia modułu');};});await page.getByRole('button',{name:'Wyłącz całe oświetlenie',exact:true}).click();assert.match(await page.locator('.status').innerText(),/Zatrzymano serię/);
+  for(const width of [320,390,1100]){await page.setViewportSize({width,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+  await page.evaluate(()=>{card.setConfig({...card.config,layout:'rooms'});});assert.equal(await page.locator('.room').count(),2);assert.equal(await page.locator('.room-title').allTextContents().then(x=>x.join('|')),'🛋️ Salon|🚪 Hol');
+  const salon=page.getByRole('region',{name:'Salon',exact:true}),hall=page.getByRole('region',{name:'Hol',exact:true});
+  assert.equal(await hall.getByRole('button',{name:'Zamknij rolety w pomieszczeniu',exact:true}).count(),0);
+  await page.evaluate(()=>{calls.length=0;hass.states['switch.hall'].state='on';hass.callService=async(...args)=>calls.push(args);card.hass=hass;});await hall.getByRole('button',{name:'Wyłącz całe oświetlenie',exact:true}).click();assert.deepEqual(await page.evaluate(()=>calls),[['switch','turn_off',{entity_id:'switch.hall'}]]);
+  assert.ok((await salon.getByRole('button',{name:'Lampa — 💡 Przełącz',exact:true}).boundingBox()).height<=42);
+  await page.evaluate(()=>{card.setConfig({...card.config,groups:['hall']});});assert.equal(await page.locator('.room').count(),1);assert.equal(await page.locator('.room-title').innerText(),'🚪 Hol');await page.evaluate(()=>{card.setConfig({...card.config,groups:[]});});
   for(const width of [320,390,1100]){await page.setViewportSize({width,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
   if(process.env.GRYFSMART_SCREENSHOT)await page.screenshot({path:process.env.GRYFSMART_SCREENSHOT,fullPage:true});
   await page.evaluate(()=>{window.editor=document.createElement('gryfsmart-home-editor');editor.setConfig({});editor.hass=hass;document.body.append(editor);});await page.getByLabel('Wyjście elektrozaczepu').waitFor();await page.getByLabel('Wyjście elektrozaczepu').selectOption('switch.lock');

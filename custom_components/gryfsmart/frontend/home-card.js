@@ -6,7 +6,8 @@ class GryfHomeCard extends HTMLElement {
     super();this.attachShadow({mode:"open"});this.rows=[];this.nodes=[];this.pending=new Set();
     this.shadowRoot.innerHTML=`<style>
     :host{display:block;min-width:0}ha-card{display:block;padding:20px;background:linear-gradient(145deg,#382044,#120c19);color:#fff;border-radius:24px;font-family:var(--primary-font-family,Roboto,Arial,sans-serif)}header{display:flex;align-items:center;gap:10px}h2{flex:1;margin:0;font-size:24px}button,input{font:inherit}button{color:#fff;background:#442653;border:1px solid #8d519f;border-radius:12px;padding:12px;cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,input:focus-visible{outline:3px solid #ff477e;outline-offset:2px}.summary{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.summary span{background:#442653;border-radius:12px;padding:12px;flex:1;min-width:100px}.door{padding:14px 0;border-bottom:1px solid #694675}.contact{margin:10px 0;color:#dfcde7}.tabs{display:flex;overflow-x:auto;gap:8px;padding:16px 0}.tabs button{white-space:nowrap}.tabs button[aria-selected=true]{background:#793b96;border-color:#ff477e}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px}.item{min-width:0;padding:15px;background:#35203f;border:1px solid #694675;border-radius:16px}.item h3{margin:0 0 10px;font-size:16px;overflow-wrap:anywhere}.item button.toggle{width:100%;min-height:85px}.on{background:#873c9e!important;border-color:#ff477e!important;box-shadow:0 0 15px #ff477e33}.unknown{color:#b4acbb}.item input{width:100%;accent-color:#ff477e;box-sizing:border-box}.state{display:block;margin:9px 0;color:#dfcde7}.controls{display:flex;gap:6px;flex-wrap:wrap}.status{color:#ffbdcc;white-space:pre-line;font-size:13px}.hint{color:#dfcde7;font-size:13px;line-height:1.5}[hidden]{display:none!important}.lock-icon{display:inline-block;width:20px;height:20px;vertical-align:middle;margin-right:8px}ha-card>header button{padding:8px}.grid>*.climate{grid-column:1/-1}
-    </style><ha-card><header><h2></h2><button class="refresh" aria-label="Odśwież grupy">↻</button></header><div class="summary" role="status"></div><section class="door" hidden><button class="lock"><svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path/></svg><span></span></button><p class="contact"></p></section><nav class="tabs" role="tablist" aria-label="Pomieszczenia"></nav><div class="actions"></div><div class="grid" role="tabpanel"></div><p class="hint"></p><p class="status" role="status"></p></ha-card>`;
+    .rooms{display:grid;gap:14px;margin-top:16px}.room{border:1px solid #a364b5;border-radius:16px;padding:12px;background:#ffffff05;min-width:0}.room-title{font-size:17px;margin:0 0 10px;color:#f2d9fa}.grid{grid-template-columns:repeat(auto-fit,minmax(min(155px,100%),1fr));gap:8px;align-items:start}.item{padding:10px;border-radius:12px}.item h3{font-size:13px;margin-bottom:5px}.item button.toggle{min-height:36px;padding:8px;font-size:13px}.item button{padding:8px;font-size:12px;min-height:36px}.state{font-size:12px;margin:5px 0}.actions{gap:6px;margin-bottom:10px}.actions button{padding:8px 10px;font-size:12px}.summary{gap:6px;margin:12px 0}.summary span{font-size:12px;padding:9px}.item input[type=range]{min-height:28px}@media(max-width:500px){ha-card{padding:12px}.room{padding:10px}.item button{min-height:40px}.item button.toggle{min-height:40px}}
+    </style><ha-card><header><h2></h2><button class="refresh" aria-label="Odśwież grupy">↻</button></header><div class="summary" role="status"></div><section class="door" hidden><button class="lock"><svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path/></svg><span></span></button><p class="contact"></p></section><nav class="tabs" role="tablist" aria-label="Pomieszczenia"></nav><div class="rooms"></div><p class="hint"></p><p class="status" role="status"></p></ha-card>`;
     this.q(".refresh").onclick=()=>this.refresh();
     this.q(".lock").onclick=()=>this.control(this.config.door_output,"switch","toggle");
   }
@@ -15,7 +16,8 @@ class GryfHomeCard extends HTMLElement {
     for(const [key,prefix] of [["door_output","switch."],["door_contact","binary_sensor."]])if(config[key]&&!(typeof config[key]==="string"&&config[key].startsWith(prefix)))throw Error("Nieprawidłowa encja: "+key);
     for(const key of ["groups","exclude_entities"])if(config[key]!==undefined&&(!Array.isArray(config[key])||config[key].some(x=>typeof x!=="string")))throw Error(key+" musi być listą tekstów.");
     if(config.contact_closed_state&&!['on','off'].includes(config.contact_closed_state))throw Error("Stan zamkniętego kontaktronu: on lub off.");
-    this.config={title:"Mój dom",show_summary:true,contact_closed_state:"on",...config};this.signature=null;this.render();this.refresh();
+    if(config.layout&&!['rooms','tabs'].includes(config.layout))throw Error('Nieprawidłowy układ pomieszczeń.');
+    this.config={title:"Mój dom",layout:"rooms",show_summary:true,contact_closed_state:"on",...config};this.signature=null;this.render();this.refresh();
   }
   connectedCallback(){clearInterval(this.timer);this.timer=setInterval(()=>this.refresh(),30000);this.refresh();}
   disconnectedCallback(){clearInterval(this.timer);this.fetching=null;}
@@ -35,7 +37,7 @@ class GryfHomeCard extends HTMLElement {
     const sig=JSON.stringify([this.config,this.visible]);if(sig!==this.signature){
       this.signature=sig;this.groups=new Map();for(const row of this.visible){const key=row.entry+'/'+row.group.id;if(!this.groups.has(key))this.groups.set(key,{...row.group,rows:[]});this.groups.get(key).rows.push(row);}
       if(!this.groups.has(this.active))this.active=this.groups.keys().next().value;
-      this.q('.tabs').replaceChildren();for(const [key,group] of this.groups){const b=document.createElement('button');b.textContent=(group.icon||'🏠')+' '+group.name;b.setAttribute('role','tab');b.onclick=()=>{this.active=key;this.renderGroup();};b.dataset.key=key;this.q('.tabs').append(b);}
+      this.q('.tabs').hidden=this.config.layout!=='tabs';this.q('.tabs').replaceChildren();for(const [key,group] of this.groups){const b=document.createElement('button');b.textContent=(group.icon||'🏠')+' '+group.name;b.setAttribute('role','tab');b.onclick=()=>{this.active=key;this.renderGroup();};b.dataset.key=key;this.q('.tabs').append(b);}
       this.renderGroup();
     }
     this.q('.hint').textContent=this.visible.length?'Podsumowanie obejmuje tylko widoczne elementy przypisane do grup. Wyjścia przekaźnikowe i PWM są liczone jako obwody oświetlenia.':'Brak przypisanych elementów. W GRYFEXPERT przypisz grupy, zapisz projekt i zaimportuj go w „GRYFSMART — Konfiguracja” → „Importuj nazwy i grupy z projektu”.';
@@ -43,11 +45,17 @@ class GryfHomeCard extends HTMLElement {
   }
   renderGroup(){
     for(const b of this.q('.tabs').children)b.setAttribute('aria-selected',String(b.dataset.key===this.active));
-    this.q('.grid').replaceChildren();this.q('.actions').replaceChildren();this.nodes=[];
-    const rows=this.groups?.get(this.active)?.rows||[];
+    this.q('.rooms').replaceChildren();this.nodes=[];
+    for(const [key,group] of this.groups||[]){
+    if(this.config.layout==='tabs'&&key!==this.active)continue;
+    const room=document.createElement('section');room.className='room';room.setAttribute('aria-label',group.name);
+    const heading=document.createElement('h3');heading.className='room-title';heading.textContent=(group.icon||'🏠')+' '+group.name;room.append(heading);
+    const actions=document.createElement('div');actions.className='actions';room.append(actions);
+    const grid=document.createElement('div');grid.className='grid';room.append(grid);this.q('.rooms').append(room);
+    const rows=group.rows;
     for(const [label,kind] of [['Wyłącz całe oświetlenie','lights'],['Zamknij rolety w pomieszczeniu','covers']]){
       const targets=rows.filter(r=>kind==='covers'?r.entity_id.startsWith('cover.'):['switch','number'].includes(r.entity_id.split('.')[0]));
-      if(targets.length){const b=document.createElement('button');b.textContent=label;b.onclick=()=>this.groupControl(targets,kind);this.q('.actions').append(b);}
+      if(targets.length){const b=document.createElement('button');b.textContent=label;b.onclick=()=>this.groupControl(targets,kind);actions.append(b);}
     }
     for(const row of rows){
       const node=document.createElement('article');node.className='item';const title=document.createElement('h3');title.textContent=row.name;node.append(title);
@@ -62,7 +70,8 @@ class GryfHomeCard extends HTMLElement {
         if(typeof child.setConfig==='function'){child.setConfig({entity:row.entity_id,title:row.name});record.child=child;node.append(child);}
         else{const b=document.createElement('button');b.textContent='Otwórz regulator';b.onclick=()=>this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:row.entity_id},bubbles:true,composed:true}));node.append(b);}
       }
-      this.nodes.push(record);this.q('.grid').append(node);
+      this.nodes.push(record);grid.append(node);
+    }
     }
     this.update();
   }
@@ -80,7 +89,7 @@ class GryfHomeCard extends HTMLElement {
       if(n.slider){n.slider.disabled=!known||busy;if(!n.dragging)n.slider.value=known?s.state:0;}
       if(n.child)n.child.hass=this._hass;
     }
-    for(const b of this.q('.actions').children)b.disabled=!!this.groupBusy;
+    for(const b of this.shadowRoot.querySelectorAll('.actions button'))b.disabled=!!this.groupBusy;
   }
   async control(id,domain,service,data={},quiet=false){
     if(!this.known(id)||this.pending.has(id))return false;
@@ -103,17 +112,20 @@ class GryfHomeEditor extends HTMLElement {
   async load(){this.loading=true;let timer;try{this.rows=await Promise.race([this._hass.callWS({type:'gryfsmart/system_entities'}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Brak listy encji. Zamknij i otwórz edytor, aby ponowić.')),15000);})]);}catch(e){this.error=e.message;}finally{clearTimeout(timer);this.loading=false;this.render();}}
   change(key,value){this.config={...this.config,[key]:value};this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:this.config},bubbles:true,composed:true}));}
   render(){
-    if(!this.config)return;this.replaceChildren();const style=document.createElement('style');style.textContent='gryfsmart-home-editor label{display:block;margin:12px 0}gryfsmart-home-editor input,gryfsmart-home-editor select{display:block;box-sizing:border-box;width:100%;padding:10px;background:var(--card-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:8px}';this.append(style);
+    if(!this.config)return;this.replaceChildren();const style=document.createElement('style');style.textContent='gryfsmart-home-editor label{display:block;margin:12px 0}gryfsmart-home-editor input,gryfsmart-home-editor select{display:block;box-sizing:border-box;width:100%;padding:10px;background:var(--card-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:8px}';style.textContent+='gryfsmart-home-editor input[type=checkbox]{display:inline-block;width:auto;margin-right:8px}gryfsmart-home-editor fieldset{border:1px solid var(--divider-color);border-radius:10px;margin:16px 0}';this.append(style);
     const text=(label,key,fallback='')=>{const l=document.createElement('label'),i=document.createElement('input');l.textContent=label;i.setAttribute('aria-label',label);i.value=this.config[key]??fallback;i.onchange=()=>this.change(key,i.value);l.append(i);this.append(l);return i;};
     const select=(label,key,options,fallback='')=>{const l=document.createElement('label'),i=document.createElement('select');l.textContent=label;i.setAttribute('aria-label',label);for(const [v,t] of options)i.add(new Option(t,v));i.value=this.config[key]??fallback;i.onchange=()=>this.change(key,i.value);l.append(i);this.append(l);};
     text('Tytuł karty','title','Mój dom');
+    select('Układ pomieszczeń','layout',[['rooms','Kilka pomieszczeń jednocześnie — ramki'],['tabs','Jedno pomieszczenie — zakładki']],'rooms');
     const rows=this.rows||[],entries=new Map(rows.map(r=>[r.entry,r.hub]));select('Instalacja','entry',[['','Wszystkie instalacje'],...entries]);
     for(const [label,key,prefix] of [['Wyjście elektrozaczepu','door_output','switch.'],['Wejście kontaktronu','door_contact','binary_sensor.']]){const options=rows.filter(r=>r.entity_id.startsWith(prefix)).map(r=>[r.entity_id,`${r.hub} · ${r.module} / ID ${r.module_id} · ${r.name}`]);if(this.config[key]&&!options.some(x=>x[0]===this.config[key]))options.push([this.config[key],this.config[key]]);select(label,key,[['','Nie pokazuj'],...options]);}
     text('Nazwa drzwi','door_name','Drzwi');select('Kontaktron: skrzydło zamknięte gdy','contact_closed_state',[['on','Zwarte (on)'],['off','Rozwarte (off)']],'on');
     select('Podsumowanie','show_summary',[['true','Pokaż'],['false','Ukryj']],String(this.config.show_summary??true));this.lastElementChild.querySelector('select').onchange=e=>this.change('show_summary',e.target.value==='true');
     const multiple=(label,key,options)=>{const l=document.createElement('label'),control=document.createElement('select');l.textContent=label;control.multiple=true;control.size=5;control.setAttribute('aria-label',label);for(const [value,title] of options){const o=new Option(title,value);o.selected=(this.config[key]||[]).includes(value);control.add(o);}control.onchange=()=>this.change(key,Array.from(control.selectedOptions,x=>x.value));l.append(control);this.append(l);};
     const groups=new Map(rows.filter(r=>r.group?.id&&(!this.config.entry||r.entry===this.config.entry)).map(r=>[r.group.id,(r.group.icon||'🏠')+' '+r.group.name]));
-    multiple('Widoczne pomieszczenia (brak wyboru = wszystkie)','groups',groups);
+    const fieldset=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='Pokaż pomieszczenia';fieldset.append(legend);
+    const all=document.createElement('label'),allInput=document.createElement('input');allInput.type='checkbox';allInput.checked=!this.config.groups?.length;allInput.onchange=()=>{this.change('groups',allInput.checked?[]:['__none__']);this.render();};all.append(allInput,document.createTextNode('Wszystkie pomieszczenia'));fieldset.append(all);
+    for(const [id,name] of groups){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=!this.config.groups?.length||this.config.groups.includes(id);input.onchange=()=>{const selected=new Set(this.config.groups?.length?this.config.groups:Array.from(groups.keys()));if(input.checked)selected.add(id);else selected.delete(id);this.change('groups',selected.size?Array.from(selected):['__none__']);this.render();};label.append(input,document.createTextNode(name));fieldset.append(label);}this.append(fieldset);
     multiple('Pomiń elementy niebędące oświetleniem','exclude_entities',rows.filter(r=>['switch','number','cover','climate','binary_sensor','sensor'].includes(r.entity_id.split('.')[0])).map(r=>[r.entity_id,r.module+' · '+r.name+' ('+r.entity_id+')']));
     const hint=document.createElement('p');hint.textContent=this.error||'Grupy i nazwy importuj z projektu w GRYFSMART — Konfiguracja. Wyjście elektrozaczepu jest automatycznie wyłączone z oświetlenia. Pozostałe wyjścia niebędące oświetleniem zaznacz na liście pomijanych encji.';this.append(hint);
   }

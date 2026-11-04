@@ -261,3 +261,10 @@ Podsumowanie dotyczy elementów widocznych po filtrach: włączone przekaźniki 
 Przyciski zbiorcze działają tylko w aktywnej grupie i są ukryte, jeśli grupa nie zawiera odpowiednich elementów. Wyłączenie oświetlenia ustawia przekaźniki OFF i PWM 0%; nie zmienia termostatów. Polecenia są wysyłane kolejno, niedostępne encje pomijane, a błąd zatrzymuje serię. Zmiana wyglądu przycisku następuje po otrzymaniu stanu HA, nie po samym kliknięciu. Grupy odświeżają się co 30 s lub przyciskiem ↻. Istniejące karty i pojedyncze encje pozostają dostępne.
 
 Jeśli karta nie pojawi się po restarcie, sprawdź zasób typu **Moduł JavaScript**: `/gryfsmart-system/home-card.js?v=0.3.10` (integracja rejestruje go automatycznie).
+
+
+### 0.3.11 — kilka pomieszczeń na jednej karcie
+
+Domyślny układ pokazuje jednocześnie wszystkie wybrane pomieszczenia, każde w osobnej ramce z nazwą i ikoną z GRYFEXPERT. Mniejsze przyciski oszczędzają miejsce. W edytorze karty w sekcji **Pokaż pomieszczenia** zaznacz Salon, Kuchnię, Łazienkę lub inne grupy. Przyciski zbiorcze działają wyłącznie wewnątrz swojego pomieszczenia.
+
+`layout: rooms` oznacza ramki; `layout: tabs` zachowuje dawny układ zakładek. Listę wybranych grup nadal zapisuje pole `groups`. Brak listy lub pusta lista oznacza wszystkie grupy. Jeśli wcześniej ręcznie dodano zasób, zmień URL na `/gryfsmart-system/home-card.js?v=0.3.11` i odśwież przeglądarkę po restarcie HA.

@@ -12,7 +12,7 @@
   "requirements": [
     "pyserial-asyncio-fast==0.16"
   ],
-  "version": "0.3.10",
+  "version": "0.3.11",
   "dependencies": [
     "frontend",
     "http",
