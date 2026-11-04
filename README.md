@@ -207,3 +207,28 @@ duration: 0.5
 ```
 
 Zastąp przykładowe identyfikatory rzeczywistymi encjami albo użyj edytora wizualnego.
+
+## 0.3.9 — karta Pomieszczenie
+
+Dodaj kartę **GRYFSMART — Pomieszczenie**. Wybierz jedną z 12 ikon
+(Salon, Kuchnia, Łazienka, Sypialnia, Pokój dzienny, Ogród, Gabinet,
+Pokój dziecięcy, Garaż, Przedpokój, Jadalnia, Taras), wpisz nazwę pokoju
+i użyj „Dodaj przycisk”. Każdy przycisk ma własną nazwę, moduł i wyjście.
+Pusta nazwa oznacza aktualną nazwę encji HA. Przyciski można usuwać.
+Kliknięcie przełącza wyjście; podświetlenie pojawia się dopiero zgodnie
+ze stanem raportowanym przez moduł. Wyjścia niedostępne są szare i zablokowane.
+Możesz dodać osobną kartę dla każdego pokoju, także z wyjściami różnych modułów.
+
+```yaml
+type: custom:gryfsmart-room-card
+title: Salon
+icon: salon
+buttons:
+  - entity: switch.twoja_lampa
+    name: Lampa główna
+  - entity: switch.twoj_kinkiet
+    name: Kinkiet
+```
+
+Po aktualizacji do 0.3.9 zrestartuj HA i odśwież stronę.
+Zasób awaryjny (Moduł JavaScript): `/gryfsmart-system/room-card.js?v=0.3.9`.
