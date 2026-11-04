@@ -35,6 +35,11 @@ test('home rooms: actual states, grouped actions, door, partial/unknown covers a
   for(const width of [320,390,1100]){await page.setViewportSize({width,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
   if(process.env.GRYFSMART_SCREENSHOT)await page.screenshot({path:process.env.GRYFSMART_SCREENSHOT,fullPage:true});
   await page.evaluate(()=>{window.editor=document.createElement('gryfsmart-home-editor');editor.setConfig({});editor.hass=hass;document.body.append(editor);});await page.getByLabel('Wyjście elektrozaczepu').waitFor();await page.getByLabel('Wyjście elektrozaczepu').selectOption('switch.lock');
+  await page.evaluate(()=>editor.addEventListener('config-changed',e=>window.selectedConfig=e.detail.config));
+  await page.getByRole('checkbox',{name:'🛋️ Salon',exact:true}).uncheck();assert.deepEqual(await page.evaluate(()=>selectedConfig.groups),['hall']);
+  await page.getByRole('checkbox',{name:'🚪 Hol',exact:true}).uncheck();assert.deepEqual(await page.evaluate(()=>selectedConfig.groups),['__none__']);
+  await page.getByRole('checkbox',{name:'🛋️ Salon',exact:true}).check();assert.deepEqual(await page.evaluate(()=>selectedConfig.groups),['salon']);
+  await page.getByRole('checkbox',{name:'Wszystkie pomieszczenia',exact:true}).check();assert.deepEqual(await page.evaluate(()=>selectedConfig.groups),[]);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
