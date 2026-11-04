@@ -89,6 +89,8 @@ def system_entities(hass, entries, user):
                 or entity.entity_id
             )
             channel = key.rsplit("_", 1)[-1]
+            saved = getattr(hub, "saved_names", {}).get(str(module.id), {})
+            group = saved.get("groups", {}).get(key) if saved.get("model") == module.model else None
             result.append(
                 {
                     "entry": entry_id,
@@ -99,6 +101,7 @@ def system_entities(hass, entries, user):
                     "entity_id": entity.entity_id,
                     "name": entity.name or label(module, key, fallback),
                     "section": section,
+                    "group": group,
                     "channel": int(channel) if channel.isdigit() else 0,
                 }
             )

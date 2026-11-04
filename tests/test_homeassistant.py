@@ -212,6 +212,19 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(registry.async_get(climate).original_name, "Podłoga")
         self.assertEqual((await entry.runtime_data.name_store.async_load())["3"]["names"]["thermostat_1"], "Podłoga")
         self.assertEqual(self.emulator.commands, before_names)
+        await rename(self.hass, connection, {"id": 903, "action": "import", "entry": entry.entry_id,
+            "project": {"roomGroups": [{"id": "salon", "name": "Salon", "icon": "🛋️"}],
+                        "devices": [{"id": 3, "model": "R0806T", "outputGroups": {"1": "salon"},
+                                     "thermostatGroups": {"1": "salon"}, "pwmGroup": "salon"}]}})
+        self.assertIsNone(connection.error)
+        saved = await entry.runtime_data.name_store.async_load()
+        self.assertEqual(saved["3"]["groups"]["pwm"]["name"], "Salon")
+        await rename(self.hass, connection, {"id": 904, "action": "rename", "entry": entry.entry_id,
+                                            "module": 3, "channel": 1, "name": "Podłoga"})
+        self.assertEqual((await entry.runtime_data.name_store.async_load())["3"]["groups"], saved["3"]["groups"])
+        await overview(self.hass, connection, {"id": 905})
+        self.assertEqual(next(r for r in connection.result if r["entity_id"] == climate)["group"]["id"], "salon")
+        self.assertEqual(self.emulator.commands, before_names)
         await rename(self.hass, guest, {"id": 902, "action": "list"})
         self.assertEqual(guest.error[0], "unauthorized")
         pwm = entity_id("_R0806T_3_pwm")

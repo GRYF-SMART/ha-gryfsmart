@@ -1,4 +1,4 @@
-import "./names-editor.js?v=0.3.7";
+import "./names-editor.js?v=0.3.10";
 const relays=["Bez zmian","Włącz","Wyłącz","Przełącz"];
 const shutters=["Bez zmian","Otwórz","Zamknij","Stop","Krok otwierania","Krok zamykania","Krok / stop","Ustaw pozycję"];
 const pwmActions=["Bez zmian","Włącz ostatni poziom","Wyłącz","Przełącz — pamięta ostatni poziom","Ustaw poziom","Przełącz — 0% ↔ wartość zadana"];

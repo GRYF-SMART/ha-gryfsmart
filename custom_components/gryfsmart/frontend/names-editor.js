@@ -18,8 +18,8 @@ class GryfNamesEditor extends HTMLElement {
     <section><h2>Nazwy z projektu i nazwy regulatorów</h2>
     <label>Instalacja <select class="network" aria-label="Instalacja nazw"></select></label>
     <label>Projekt GRYFEXPERT <input type="file" accept=".json,.gryf.json" aria-label="Projekt GRYFEXPERT"></label>
-    <button class="import">Importuj nazwy z projektu</button><button class="refresh">Odśwież listę</button>
-    <p class="hint">Import zapisuje w HA nazwy modułów, wejść, wyjść, PWM, czujników i regulatorów. Sprawdza ID i model. Nie wysyła reguł ani poleceń do sprzętu. Nazwy zaimportowane lub zmienione tutaj mają pierwszeństwo przed EEPROM. Własne nazwy nadane w ustawieniach encji HA pozostają nadrzędne.</p>
+    <button class="import">Importuj nazwy i grupy z projektu</button><button class="refresh">Odśwież listę</button>
+    <p class="hint">Import zapisuje w HA grupy pomieszczeń oraz nazwy modułów, wejść, wyjść, PWM, czujników i regulatorów. Sprawdza ID i model. Nie wysyła reguł ani poleceń do sprzętu. Nazwy zaimportowane lub zmienione tutaj mają pierwszeństwo przed EEPROM. Własne nazwy nadane w ustawieniach encji HA pozostają nadrzędne.</p>
     <label>Regulator <select class="regulator" aria-label="Regulator do nazwania"></select></label>
     <label>Nazwa panelu / regulatora <input class="name" maxlength="18" aria-label="Nazwa panelu / regulatora"></label>
     <button class="rename">Zapisz nazwę w HA</button><p class="status" role="status"></p></section>`;
@@ -40,11 +40,11 @@ class GryfNamesEditor extends HTMLElement {
       const parsed = JSON.parse(await file.text());
       const project = Object.fromEntries(Object.entries(parsed).map(([k,v]) => [k.toLowerCase(),v]));
       if (!Array.isArray(project.devices)) throw new Error("Plik nie zawiera modułów projektu");
-      const fields = ["id","model","name","inputnames","outputnames","regulatornames","temperaturenames","pwmname"];
+      const fields = ["id","model","name","inputnames","outputnames","regulatornames","temperaturenames","pwmname","inputgroups","outputgroups","thermostatgroups","pwmgroup"];
       const devices = project.devices.map(d => Object.fromEntries(Object.entries(d).map(([k,v]) => [k.toLowerCase(),v]).filter(([k]) => fields.includes(k))));
-      const result = await this.api("import",{entry:q(".network").value,project:{devices}});
+      const result = await this.api("import",{entry:q(".network").value,project:{devices,...(project.roomgroups!==undefined?{roomgroups:project.roomgroups}:{})}});
       await this.load();
-      this.status(`Zaimportowano ${result.count} nazw do HA. Konfiguracja sprzętu pozostała bez zmian.`);
+      this.status(`Zaimportowano ${result.count} nazw oraz przypisania grup z projektu do HA. Konfiguracja sprzętu pozostała bez zmian.`);
     });
     void this.run(() => this.load());
   }

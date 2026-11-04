@@ -76,13 +76,14 @@ class GryfHub:
 
     async def save_names(self, updates):
         async with self.names_lock:
-            merged = {key: {"model": value["model"], "names": dict(value["names"])}
+            merged = {key: {"model": value["model"], "names": dict(value["names"]), "groups": dict(value.get("groups", {}))}
                       for key, value in self.saved_names.items()}
             for address, record in updates.items():
                 old = merged.get(address, {})
                 names = dict(old.get("names", {})) if old.get("model") == record["model"] else {}
                 names.update(record["names"])
-                merged[address] = {"model": record["model"], "names": names}
+                groups = record.get("groups", old.get("groups", {}) if old.get("model") == record["model"] else {})
+                merged[address] = {"model": record["model"], "names": names, "groups": groups}
             await self.name_store.async_save(merged)
             self.saved_names = merged
             apply_labels(self.client.modules, merged)

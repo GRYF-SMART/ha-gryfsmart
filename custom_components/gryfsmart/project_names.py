@@ -23,6 +23,22 @@ def project_labels(project, modules):
     devices = project.get("devices")
     if not isinstance(devices, list) or not 1 <= len(devices) <= 35:
         raise ProtocolError("Projekt musi zawierać 1-35 modułów")
+    room_map = None
+    if "roomgroups" in project:
+        rooms = project["roomgroups"]
+        if not isinstance(rooms, list) or len(rooms) > 500:
+            raise ProtocolError("Nieprawidłowa lista pomieszczeń")
+        room_map = {}
+        for room in rooms:
+            if not isinstance(room, dict):
+                raise ProtocolError("Nieprawidłowe pomieszczenie")
+            room = {k.lower(): v for k, v in room.items()}
+            rid, title, icon = room.get("id"), room.get("name"), room.get("icon", "🏠")
+            if (not isinstance(rid, str) or not 1 <= len(rid) <= 80 or rid in room_map
+                    or not isinstance(title, str) or not title.strip() or len(title) > 60
+                    or not isinstance(icon, str) or len(icon) > 32):
+                raise ProtocolError("Nieprawidłowe ID, nazwa lub ikona pomieszczenia")
+            room_map[rid] = {"id": rid, "name": title.strip(), "icon": icon}
     result = {}
     for device in devices:
         if not isinstance(device, dict):
@@ -52,6 +68,26 @@ def project_labels(project, modules):
         if module.pwm and "pwmname" in device:
             labels["pwm"] = name_value(device["pwmname"])
         result[str(address)] = {"model": module.model, "names": labels}
+        if room_map is not None:
+            groups = {}
+            for field, prefix, count in (
+                ("inputgroups", "input", module.inputs),
+                ("outputgroups", "cover" if module.shutters else "relay", module.shutters or module.outputs),
+                ("thermostatgroups", "thermostat", module.thermostats),
+            ):
+                assignments = device.get(field) or {}
+                if not isinstance(assignments, dict):
+                    raise ProtocolError("Nieprawidłowe przypisanie grup")
+                for channel, rid in assignments.items():
+                    if str(channel) not in {str(n) for n in range(1, count + 1)} or rid not in room_map:
+                        raise ProtocolError("Nieznane pomieszczenie lub kanał")
+                    groups[f"{prefix}_{channel}"] = room_map[rid]
+            rid = device.get("pwmgroup")
+            if rid:
+                if not module.pwm or rid not in room_map:
+                    raise ProtocolError("Nieprawidłowa grupa PWM")
+                groups["pwm"] = room_map[rid]
+            result[str(address)]["groups"] = groups
     return result
 
 

@@ -232,3 +232,32 @@ buttons:
 
 Po aktualizacji do 0.3.9 zrestartuj HA i odśwież stronę.
 Zasób awaryjny (Moduł JavaScript): `/gryfsmart-system/room-card.js?v=0.3.9`.
+
+
+## Karta „GRYFSMART — dom i pomieszczenia” (0.3.10)
+
+1. W GRYFEXPERT przypisz grupy wejściom, wyjściom/roletom, PWM i regulatorom. Zapisz projekt JSON.
+2. Po aktualizacji integracji w HACS uruchom ponownie HA i odśwież aplikację/przeglądarkę.
+3. Otwórz **GRYFSMART — Konfiguracja**, wybierz instalację i **Importuj nazwy i grupy z projektu**. Import zapisuje metadane w HA, bez sterowania sprzętem.
+4. W panelu wybierz **Dodaj kartę → GRYFSMART — dom i pomieszczenia**. W edytorze wybierz wyjście elektrozaczepu i wejście kontaktronu (opcjonalne) oraz stan oznaczający zamknięte skrzydło.
+
+```yaml
+type: custom:gryfsmart-home-card
+title: Mój dom
+show_summary: true
+# Opcjonalnie wybierz w edytorze:
+# entry: ID_wpisu_integracji
+# door_output: switch.elektrozaczep
+# door_contact: binary_sensor.kontaktron
+contact_closed_state: "on"
+# groups: [standard-1, standard-2]
+# exclude_entities: [switch.pompa]
+```
+
+Zakładki tworzą się wyłącznie z przypisanych elementów. Grupy różnych instalacji pozostają oddzielne nawet przy identycznym ID. Pokazują wyjścia, rolety, PWM, regulatory i przypisane wejścia. Czujniki bez grup nie są dodawane automatycznie; bieżąca temperatura regulatora pozostaje widoczna przy regulatorze. Nazwy użytkownika nadane ręcznie w HA mają pierwszeństwo przed importem.
+
+Podsumowanie dotyczy elementów widocznych po filtrach: włączone przekaźniki oraz PWM >0%, rolety całkowicie otwarte/zamknięte, częściowo otwarte/w ruchu i brak danych. Każde wyjście przekaźnikowe jest traktowane jako obwód oświetlenia — pompy, wentylatory itp. wyklucz w edytorze. Wybrane wyjście zamka jest wykluczane automatycznie. Zamek: wyjście ON = kłódka zamknięta, OFF = otwarta. Kontaktron niezależnie pokazuje stan skrzydła.
+
+Przyciski zbiorcze działają tylko w aktywnej grupie i są ukryte, jeśli grupa nie zawiera odpowiednich elementów. Wyłączenie oświetlenia ustawia przekaźniki OFF i PWM 0%; nie zmienia termostatów. Polecenia są wysyłane kolejno, niedostępne encje pomijane, a błąd zatrzymuje serię. Zmiana wyglądu przycisku następuje po otrzymaniu stanu HA, nie po samym kliknięciu. Grupy odświeżają się co 30 s lub przyciskiem ↻. Istniejące karty i pojedyncze encje pozostają dostępne.
+
+Jeśli karta nie pojawi się po restarcie, sprawdź zasób typu **Moduł JavaScript**: `/gryfsmart-system/home-card.js?v=0.3.10` (integracja rejestruje go automatycznie).
