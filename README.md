@@ -268,3 +268,7 @@ Jeśli karta nie pojawi się po restarcie, sprawdź zasób typu **Moduł JavaScr
 Domyślny układ pokazuje jednocześnie wszystkie wybrane pomieszczenia, każde w osobnej ramce z nazwą i ikoną z GRYFEXPERT. Mniejsze przyciski oszczędzają miejsce. W edytorze karty w sekcji **Pokaż pomieszczenia** zaznacz Salon, Kuchnię, Łazienkę lub inne grupy. Przyciski zbiorcze działają wyłącznie wewnątrz swojego pomieszczenia.
 
 `layout: rooms` oznacza ramki; `layout: tabs` zachowuje dawny układ zakładek. Listę wybranych grup nadal zapisuje pole `groups`. Brak listy lub pusta lista oznacza wszystkie grupy. Jeśli wcześniej ręcznie dodano zasób, zmień URL na `/gryfsmart-system/home-card.js?v=0.3.11` i odśwież przeglądarkę po restarcie HA.
+
+## Sterowanie online przy regułach (0.3.12)
+
+Panel GRYFSMART — Konfiguracja pokazuje przy lokalnych i zdalnych akcjach reguły aktualny stan wyjścia oraz przycisk przełączania. PWM ma suwak 0–100%, a rolety Open / Stop / Close. Sterowanie działa od razu, niezależnie od ustawionej akcji reguły, i nie zapisuje EEPROM. Brak encji lub stan unavailable blokuje sterowanie.
