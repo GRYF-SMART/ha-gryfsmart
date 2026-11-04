@@ -132,7 +132,7 @@ class ThermostatConfig:
             or not 0 <= self.source <= 35
             or self.sensor not in (1, 2)
             or not -550 <= self.setpoint <= 1250
-            or not 1 <= self.hysteresis <= 200
+            or not 0 <= self.hysteresis <= 200
             or len(self.outputs) > 4
             or (self.mode and not self.outputs)
         ):

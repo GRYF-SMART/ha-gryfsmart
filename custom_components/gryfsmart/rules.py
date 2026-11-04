@@ -68,14 +68,14 @@ def validate(module, number, rule, modules):
         if not isinstance(slot, dict) or set(slot) != {"target", "type", "data"}:
             raise ProtocolError("Nieprawidłowy slot")
         target, kind, data = slot["target"], slot["type"], slot["data"]
-        integer(kind, 0, 5)
-        vector(data, [0, 8, 6, 8, 3, 4][kind], 0, 255)
+        integer(kind, 0, 6)
+        vector(data, [0, 8, 6, 8, 3, 4, 8][kind], 0, 255)
         if not kind:
             if target != 0:
                 raise ProtocolError("Pusty slot ma mieć ID 0")
             continue
         integer(target, 1, 35)
-        if target == module.id and (kind != 5 or module.shutters):
+        if target == module.id and (kind < 5 or module.shutters):
             raise ProtocolError("Do własnego modułu użyj akcji lokalnej")
         peer = modules.get(target)
         if kind == 1:
@@ -96,6 +96,20 @@ def validate(module, number, rule, modules):
                 or (peer and not peer.pwm)
             ):
                 raise ProtocolError("Nieprawidłowe sterowanie PWM")
+        elif kind == 6:
+            def supported(m):
+                return m and m.model in ("R0808", "R0806T") and int(m.firmware) >= 33
+            if not supported(module) or not supported(peer):
+                raise ProtocolError("Nowe timery wymagają R0808/R0806T FW33 w module reguły i celu")
+            if not 1 <= data[0] <= peer.outputs or data[1] not in (1, 2) or data[6] > 1 or data[7] or (data[1] == 1 and (data[4] or data[5])) or (data[1] == 2 and not (data[4] or data[5])):
+                raise ProtocolError("Nieprawidłowy timer z opóźnieniem")
+            if target != module.id and any(
+                m.id not in (target, module.id) and not supported(m)
+                and (not module.position or not peer.position or not m.position
+                     or min(module.position, peer.position) < m.position < max(module.position, peer.position))
+                for m in modules.values()
+            ):
+                raise ProtocolError("Zdalny timer wymaga R0808/R0806T FW33 na całej drodze do celu; użyj timera lokalnego w module docelowym")
         elif (
             data[0] < 1
             or data[0] > (peer.outputs if peer else 8)

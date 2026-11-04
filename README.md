@@ -272,3 +272,7 @@ Domyślny układ pokazuje jednocześnie wszystkie wybrane pomieszczenia, każde 
 ## Sterowanie online przy regułach (0.3.12)
 
 Panel GRYFSMART — Konfiguracja pokazuje przy lokalnych i zdalnych akcjach reguły aktualny stan wyjścia oraz przycisk przełączania. PWM ma suwak 0–100%, a rolety Open / Stop / Close. Sterowanie działa od razu, niezależnie od ustawionej akcji reguły, i nie zapisuje EEPROM. Brak encji lub stan unavailable blokuje sterowanie.
+
+## 0.3.13 — sloty, timery i histereza 0
+
+Moduł wybrany w jednym slocie jest pomijany na listach pozostałych slotów. R0808/R0806T FW33 obsługują wyłączenie po czasie i impuls po opóźnieniu; czasy 0–6553,5 s co 0,1 s (impuls min. 0,1 s). Zdalna akcja czasowa wymaga FW33 na całej drodze R0808/R0806T między źródłem i celem. Histereza regulatora może wynosić 0: grzanie poniżej, chłodzenie powyżej zadanej; przy równej temperaturze wyłączenie. Starsze firmware wymagają aktualizacji.

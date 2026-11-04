@@ -459,6 +459,12 @@ class GryfClient:
             # Read before every write; preserve source, hysteresis and outputs.
             cfg = await self.read_thermostat_config(address, channel)
             desired = replace(cfg, **changes)
+            if desired.hysteresis == 0:
+                target = self.modules[address]
+                if any(m.thermostats and int(m.firmware) < 33
+                       and (m.id == address or not target.position or not m.position or m.position < target.position)
+                       for m in self.modules.values()):
+                    raise ProtocolError("Histereza 0 wymaga firmware 33 w regulatorze i R0806T/R0808 po drodze do niego")
             command = desired.command(address, channel)
             await self.request(command, lambda line: line == f"RuleOK={address}", mutation=True)
             actual = await self.read_thermostat_config(address, channel)

@@ -112,3 +112,18 @@ class RuleTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.peer.commands.count(command), 1)
         self.assertIsNone(self.peer.saved_rules)
         self.assertFalse(self.client.connected)
+
+    async def test_delayed_timer_roundtrip_and_firmware_gate(self):
+        self.client.modules[3].firmware = "33"
+        baseline = await self.client.read_rule(3, 1)
+        desired = copy.deepcopy(baseline)
+        desired["slots"][0] = {"target": 3, "type": 6, "data": [6, 2, 255, 255, 255, 255, 1, 0]}
+        self.assertEqual(await self.client.write_rule(3, 1, desired, baseline), desired)
+        self.client.modules[3].firmware = "32"
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.write_rule(3, 1, desired, desired)
+
+    def test_zero_hysteresis_config(self):
+        cfg = protocol.ThermostatConfig(1, 0, 0, 1, 220, 0, ((0, 2, 1),))
+        cfg.validate()
+        self.assertIn(",220,0,1,", cfg.command(3, 1))
