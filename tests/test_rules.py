@@ -127,3 +127,13 @@ class RuleTests(unittest.IsolatedAsyncioTestCase):
         cfg = protocol.ThermostatConfig(1, 0, 0, 1, 220, 0, ((0, 2, 1),))
         cfg.validate()
         self.assertIn(",220,0,1,", cfg.command(3, 1))
+
+    async def test_on_delay_only_r0806t_35(self):
+        self.client.modules[3].firmware = "35"
+        baseline = await self.client.read_rule(3, 1)
+        desired = copy.deepcopy(baseline)
+        desired["slots"][0] = {"target": 3, "type": 6, "data": [6, 3, 255, 255, 0, 0, 1, 0]}
+        self.assertEqual(await self.client.write_rule(3, 1, desired, baseline), desired)
+        self.client.modules[3].firmware = "34"
+        with self.assertRaises(protocol.ProtocolError):
+            await self.client.write_rule(3, 1, desired, desired)

@@ -98,10 +98,10 @@ def validate(module, number, rule, modules):
                 raise ProtocolError("Nieprawidłowe sterowanie PWM")
         elif kind == 6:
             def supported(m):
-                return m and m.model in ("R0808", "R0806T") and int(m.firmware) >= 33
+                return m and ((m.model == "R0806T" and int(m.firmware) >= 35) if data[1] == 3 else (m.model in ("R0808", "R0806T") and int(m.firmware) >= 33))
             if not supported(module) or not supported(peer):
-                raise ProtocolError("Nowe timery wymagają R0808/R0806T FW33 w module reguły i celu")
-            if not 1 <= data[0] <= peer.outputs or data[1] not in (1, 2) or data[6] > 1 or data[7] or (data[1] == 1 and (data[4] or data[5])) or (data[1] == 2 and not (data[4] or data[5])):
+                raise ProtocolError("Włącz po czasie wymaga R0806T FW35 w module reguły i celu" if data[1] == 3 else "Nowe timery wymagają R0808/R0806T FW33 w module reguły i celu")
+            if not 1 <= data[0] <= peer.outputs or data[1] not in (1, 2, 3) or data[6] > 1 or data[7] or (data[1] != 2 and (data[4] or data[5])) or (data[1] == 2 and not (data[4] or data[5])):
                 raise ProtocolError("Nieprawidłowy timer z opóźnieniem")
             if target != module.id and any(
                 m.id not in (target, module.id) and not supported(m)
@@ -109,7 +109,7 @@ def validate(module, number, rule, modules):
                      or min(module.position, peer.position) < m.position < max(module.position, peer.position))
                 for m in modules.values()
             ):
-                raise ProtocolError("Zdalny timer wymaga R0808/R0806T FW33 na całej drodze do celu; użyj timera lokalnego w module docelowym")
+                raise ProtocolError("Włącz po czasie wymaga R0806T FW35 na całej drodze do celu; użyj timera lokalnego" if data[1] == 3 else "Zdalny timer wymaga R0808/R0806T FW33 na całej drodze do celu; użyj timera lokalnego w module docelowym")
         elif (
             data[0] < 1
             or data[0] > (peer.outputs if peer else 8)
