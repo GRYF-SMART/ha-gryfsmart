@@ -1,0 +1,40 @@
+name: Aktualizuj katalog pobierania
+on:
+  release:
+    types: [published, edited, deleted]
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: public-download-catalog
+  cancel-in-progress: false
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: GRYF-SMART/gryfsmart-firmware
+          path: .catalog-source
+      - name: Odswiez katalog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .catalog-source/.github/catalog/update_catalog.py --out . --mode ha
+      - name: Zapisz zmiany
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- README.md
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: aktualne pliki i trzy ostatnie wersje"
+            git pull --rebase origin main
+            git push
+          fi
