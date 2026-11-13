@@ -5,11 +5,21 @@ from homeassistant.components.cover import (
     CoverEntity,
     CoverEntityFeature,
 )
+from homeassistant.helpers import service
+import voluptuous as vol
 
 from .entity import GryfEntity
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
+    if not hasattr(service, "async_register_platform_entity_service"):
+        from homeassistant.helpers.entity_platform import async_get_current_platform
+        async_get_current_platform().async_register_entity_service(
+            "shutter_action",
+            {vol.Required("action"): vol.All(vol.Coerce(int), vol.In([1, 2, 3, 4, 5, 7, 8, 9, 10])),
+             vol.Optional("value", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=255))},
+            "async_shutter_action",
+        )
     hub = entry.runtime_data
     async_add_entities(
         GryfCover(hub, module, channel)
@@ -64,4 +74,9 @@ class GryfCover(GryfEntity, CoverEntity):
     async def async_set_cover_position(self, **kwargs):
         await self.operation(
             self.hub.client.shutter(self.module.id, self.channel, 7, int(kwargs["position"]))
+        )
+
+    async def async_shutter_action(self, action, value=0):
+        await self.operation(
+            self.hub.client.shutter(self.module.id, self.channel, int(action), int(value))
         )

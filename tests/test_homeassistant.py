@@ -183,6 +183,10 @@ class HomeAssistantTests(unittest.IsolatedAsyncioTestCase):
             "cover", "close_cover", {"entity_id": cover}, blocking=True
         )
         self.assertIn("AT+RolAct=4,2,2,0,8", self.emulator.commands)
+        await self.hass.services.async_call(
+            "gryfsmart", "shutter_action", {"entity_id": cover, "action": 10, "value": 12}, blocking=True
+        )
+        self.assertIn("AT+RolAct=4,2,10,12,28", self.emulator.commands)
         climate = entity_id("_R0806T_3_thermostat_1")
         self.assertEqual(self.hass.states.get(climate).state, "off")
         await self.hass.services.async_call(

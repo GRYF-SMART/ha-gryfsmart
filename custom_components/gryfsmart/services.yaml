@@ -17,3 +17,44 @@ pulse:
           step: 0.1
           unit_of_measurement: s
           mode: box
+shutter_action:
+  name: Akcja rolety
+  description: Wykonuje jedną ze standardowych akcji rolety GRYFSMART.
+  target:
+    entity:
+      integration: gryfsmart
+      domain: cover
+  fields:
+    action:
+      name: Akcja
+      required: true
+      selector:
+        select:
+          options:
+            - label: OTWÓRZ
+              value: 1
+            - label: STOP
+              value: 3
+            - label: ZAMKNIJ
+              value: 2
+            - label: ZAMKNIJ+STOP
+              value: 9
+            - label: OTWÓRZ+STOP
+              value: 4
+            - label: STEP
+              value: 5
+            - label: OTWÓRZ NA CZAS (sekundy)
+              value: 8
+            - label: ZAMKNIJ NA CZAS (sekundy)
+              value: 10
+            - label: USTAW POZYCJĘ (%)
+              value: 7
+    value:
+      name: Czas w sekundach lub pozycja w procentach
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box

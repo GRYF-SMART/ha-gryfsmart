@@ -429,11 +429,15 @@ class GryfClient:
                 )
 
     async def shutter(self, address, channel, action, position=0):
+        valid = (
+            (action in (1, 2, 3, 4, 5, 6, 9) and position == 0)
+            or (action == 7 and 0 <= position <= 100)
+            or (action in (8, 10) and 1 <= position <= 255)
+        )
         if (
             not self.modules[address].shutters
             or channel not in range(1, 5)
-            or action not in (1, 2, 3, 7)
-            or not 0 <= position <= 100
+            or not valid
         ):
             raise ProtocolError("Invalid shutter action")
         async with self.control_lock:

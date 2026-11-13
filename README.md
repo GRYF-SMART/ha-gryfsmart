@@ -1,9 +1,10 @@
 # GRYFSMART dla Home Assistant
 
-**[Pobierz najnowszą integrację 0.3.14 ZIP](https://github.com/GRYF-SMART/ha-gryfsmart/releases/download/v0.3.14/GRYFSMART-HomeAssistant-0.3.14.zip)**
+**[Pobierz najnowszą integrację 0.3.15 ZIP](https://github.com/GRYF-SMART/ha-gryfsmart/releases/download/v0.3.15/GRYFSMART-HomeAssistant-0.3.15.zip)**
 
 | Wersja | Data publikacji | Pobieranie | Zmiany |
 |---|---|---|---|
+| **0.3.15** | 2026-11-13 | [Pobierz](https://github.com/GRYF-SMART/ha-gryfsmart/releases/download/v0.3.15/GRYFSMART-HomeAssistant-0.3.15.zip) | Roleta obsługuje komplet dziewięciu akcji: open/stop/close, oba kierunkowe STEP, STEP cykliczny, otwieranie i zamykanie na czas oraz ustawianie pozycji. Dostępna usługa `gryfsmart.shutter_action`; czasy w sekundach. |
 | **0.3.14** | 2026-11-05 | [Pobierz](https://github.com/GRYF-SMART/ha-gryfsmart/releases/download/v0.3.14/GRYFSMART-HomeAssistant-0.3.14.zip) | R0806T FW35: nowa akcja Włącz po czasie i pozostaw włączone. Stan wyjścia zachowany podczas opóźnienia, po terminie ON. Zdalna akcja wymaga R0806T FW35 na całej drodze. Pozostałe modele bez zmian. Po zakończeniu aktualizacji sprzętu zaktualizuj integrację, zrestartuj HA i odśwież przeglądarkę. [Pełny opis](https://github.com/GRYF-SMART/ha-gryfsmart/releases/tag/v0.3.14) |
 | **0.3.13** | 2026-11-04 | [Pobierz](https://github.com/GRYF-SMART/ha-gryfsmart/releases/download/v0.3.13/GRYFSMART-HomeAssistant-0.3.13.zip) | Sloty pomijają moduły wybrane w innych slotach. R0808/R0806T FW33: wyłącz po czasie, impuls po opóźnieniu na czas, histereza termostatów od 0. Zdalne timery wymagają zgodnych modułów FW33 na drodze do celu. Po aktualizacji zrestartuj HA i odśwież przeglądarkę. [Pełny opis](https://github.com/GRYF-SMART/ha-gryfsmart/releases/tag/v0.3.13) |
 | **0.3.12** | 2026-11-04 | [Pobierz](https://github.com/GRYF-SMART/ha-gryfsmart/releases/download/v0.3.12/GRYFSMART-HomeAssistant-0.3.12.zip) | Sterowanie online przy regułach lokalnych i zdalnych: stan i przełączanie przekaźników, suwak PWM oraz Open/Stop/Close dla rolet. Przyciski korzystają z potwierdzonych stanów HA i nie zmieniają treści reguły ani EEPROM. Po aktualizacji zrestartuj HA i odśwież przeglądarkę. [Pełny opis](https://github.com/GRYF-SMART/ha-gryfsmart/releases/tag/v0.3.12) |
@@ -26,7 +27,7 @@ ETH0606T: adres IP modułu, TCP **5000**. Aktualny firmware umożliwia równoleg
 
 Po wykryciu modułów integracja tworzy urządzenia i encje wejść, wyjść, rolet oraz dostępnych temperatur i regulatorów. Nazwy oraz grupy można zaimportować z projektu GRYFEXPERT. Flagi są zmiennymi wirtualnymi, oddzielnymi od przekaźników.
 
-S0804: góra, dół, STOP, pozycja procentowa. **0% to zamknięcie, 100% otwarcie.** Po restarcie lub zmianie czasów pozycja może być nieznana; wykonaj pełny przejazd. Pozycja wynika z czasu ruchu, nie z czujnika położenia.
+S0804: OTWÓRZ, STOP, ZAMKNIJ, ZAMKNIJ+STOP, OTWÓRZ+STOP, STEP cykliczny, OTWÓRZ/ZAMKNIJ NA CZAS (sekundy) i USTAW POZYCJĘ %. **0% to zamknięcie, 100% otwarcie.** Po restarcie lub zmianie czasów pozycja może być nieznana; wykonaj pełny przejazd. Pozycja wynika z czasu ruchu, nie z czujnika położenia.
 
 ## Panel GRYFSMART
 
@@ -34,4 +35,5 @@ Karta `custom:gryfsmart-home-card` prezentuje urządzenia i pokoje; zasób JavaS
 
 [Protokół oraz znaczenie raportów](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/PROTOKOL) · [Najnowsze HEX-y](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/HEX)
 
-[1. Aplikacja GRYFSMART](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/GRYFSMART) · [2. GRYFSMART-Programator](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/AKTUALIZATOR) · [3. Driver Home Assistant](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/HOME-ASSISTANT) · [4. Driver RTI](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/RTI) · [5. Instalator Bootloader](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/BOOTLOADER) · [6. Protokół GRYFSMART](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/PROTOKOL) · [7. System i moduły GRYFSMART](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/SYSTEM)
+[1. Aplikacja GRYFSMART](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/GRYFSMART) · [2. GRYFSMART-Programator](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/AKTUALIZATOR) · [3. Driver Home Assistant](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/HOME-ASSISTANT) · [4. Driver RTI](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/RTI) · [5. Instalator Bootloader](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/BOOTLOADER) · [6. Protokół GRYFSMART](https://github.com/GRYF-SMART/gryfsmart-firmware/tree/main/PROTOKOL)
+

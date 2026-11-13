@@ -29,6 +29,14 @@ async def async_setup(hass, config):
             schema={vol.Required("duration"): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=60))},
             func="async_pulse",
         )
+        service.async_register_platform_entity_service(
+            hass, DOMAIN, "shutter_action", entity_domain="cover",
+            schema={
+                vol.Required("action"): vol.All(vol.Coerce(int), vol.In([1, 2, 3, 4, 5, 7, 8, 9, 10])),
+                vol.Optional("value", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=255)),
+            },
+            func="async_shutter_action",
+        )
     return True
 
 

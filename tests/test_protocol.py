@@ -191,10 +191,22 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
         await self.client.relay(2, 8, False)
         await self.client.shutter(4, 2, 1)
         await self.client.shutter(4, 2, 2)
+        for action in (3, 4, 5, 6, 9):
+            await self.client.shutter(4, 2, action)
+        await self.client.shutter(4, 2, 8, 12)
+        await self.client.shutter(4, 2, 10, 15)
         await self.client.shutter(4, 2, 7, 60)
         self.assertIn("AT+RolAct=4,2,1,0,7", self.emulator.commands)
         self.assertIn("AT+RolAct=4,2,2,0,8", self.emulator.commands)
         self.assertIn("AT+RolAct=4,2,7,60,73", self.emulator.commands)
+        self.assertIn("AT+RolAct=4,2,4,0,10", self.emulator.commands)
+        self.assertIn("AT+RolAct=4,2,5,0,11", self.emulator.commands)
+        self.assertIn("AT+RolAct=4,2,9,0,15", self.emulator.commands)
+        self.assertIn("AT+RolAct=4,2,8,12,26", self.emulator.commands)
+        self.assertIn("AT+RolAct=4,2,10,15,31", self.emulator.commands)
+        for action, value in ((8, 0), (10, 256), (9, 1), (7, 101)):
+            with self.assertRaises(Exception):
+                await self.client.shutter(4, 2, action, value)
         before = self.emulator.configs[3, 1]
         await self.client.thermostat(3, 1, setpoint=235, mode=1)
         self.assertEqual(self.emulator.configs[3, 1], replace(before, setpoint=235, mode=1))
